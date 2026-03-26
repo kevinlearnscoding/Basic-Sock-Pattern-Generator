@@ -40,9 +40,74 @@ pause_for_user() {
     read -r dummy
 }
 
+print_welcome() {
+    printf "%b" "============================================\n${HIGHLIGHT}WELCOME TO THE BASIC SOCK PATTERN GENERATOR!${RESET}\n============================================\n\nThis tool will help you create a basic sock knitting pattern based on your measurements, gauge, and design preferences. Follow the prompts to input your information, review the generated pattern, and make any adjustments you'd like before finalizing it.\n\n${BOLD}NOTE: You must knit a gauge swatch before using this tool to ensure accurate stitch counts.${RESET}\n\nNOTE: This tool is for hand-knit socks - if you are looking for machine-knit sock patterns, please check out the resources linked in the README.\n\n${HIGHLIGHT}Let's get started!${RESET}\n" | fold -w 80 -s
+}
+
+
 # ============================================================================
 # INPUT FUNCTIONS
 # ============================================================================
+
+get_construction_method() {
+    print_section "Sock Construction Method"
+
+    printf "How do you want to knit your socks?\n"
+    printf "1) Cuff-Down (start at cuff, knit towards toe)\n"
+    printf "2) Toe-Up (start at toe, knit towards cuff)\n"
+    printf "\nChoice (1-2): "
+    read -r method_choice
+
+    case "$method_choice" in
+        1)
+            CONSTRUCTION_METHOD="cuff-down"
+            ;;
+        2)
+            CONSTRUCTION_METHOD="toe-up"
+            ;;
+        *)
+            CONSTRUCTION_METHOD="cuff-down"
+            ;;
+    esac
+}
+
+get_measurement_units() {
+    print_section "Measurement Units"
+
+    printf "Which measurement system do you prefer?\n"
+    printf "1) Imperial (inches, yards)\n"
+    printf "2) Metric (centimeters, meters)\n"
+    printf "\nChoice (1-2): "
+    read -r unit_choice
+
+    case "$unit_choice" in
+        1)
+            MEASUREMENT_UNITS="imperial"
+            UNIT_LENGTH="inches"
+            UNIT_DISTANCE="yards"
+            ;;
+        2)
+            MEASUREMENT_UNITS="metric"
+            UNIT_LENGTH="cm"
+            UNIT_DISTANCE="meters"
+            ;;
+        *)
+            MEASUREMENT_UNITS="imperial"
+            UNIT_LENGTH="inches"
+            UNIT_DISTANCE="yards"
+            ;;
+    esac
+}
+
+# Conversion helper: cm to inches
+cm_to_inches() {
+    printf "%.1f" "$1" | awk '{printf "%.1f", $1 / 2.54}'
+}
+
+# Conversion helper: inches to cm
+inches_to_cm() {
+    printf "%.1f" "$1" | awk '{printf "%.1f", $1 * 2.54}'
+}
 
 get_foot_size() {
     print_section "Foot Size Selection"
@@ -66,10 +131,29 @@ get_foot_size() {
             compute_foot_length_from_mens_size "$size"
             ;;
         3)
-            printf "\nFoot length in inches: "
-            read -r FOOT_LENGTH
-            printf "Foot circumference in inches: "
-            read -r FOOT_CIRCUMFERENCE
+            if [ "$MEASUREMENT_UNITS" = "metric" ]; then
+                printf "\nFoot length (cm): "
+            else
+                printf "\nFoot length (inches): "
+            fi
+            read -r input_length
+            if [ "$MEASUREMENT_UNITS" = "metric" ]; then
+                FOOT_LENGTH=$(cm_to_inches "$input_length")
+            else
+                FOOT_LENGTH="$input_length"
+            fi
+
+            if [ "$MEASUREMENT_UNITS" = "metric" ]; then
+                printf "Foot circumference (cm): "
+            else
+                printf "Foot circumference (inches): "
+            fi
+            read -r input_circumference
+            if [ "$MEASUREMENT_UNITS" = "metric" ]; then
+                FOOT_CIRCUMFERENCE=$(cm_to_inches "$input_circumference")
+            else
+                FOOT_CIRCUMFERENCE="$input_circumference"
+            fi
             ;;
         *)
             printf "Invalid choice. Using default size 8.\n"
@@ -114,13 +198,13 @@ get_gauge() {
             GAUGE_HEIGHT=1
             ;;
         2)
-            printf "\nHow many stitches over how many inches? "
+            printf "\nHow many stitches over your measurement? "
             read -r GAUGE_SPI
-            printf "Enter width in inches: "
+            printf "How many inches was your measurement? "
             read -r GAUGE_WIDTH
-            printf "How many rows over how many inches? "
+            printf "How many rows over how your measurement? "
             read -r GAUGE_RPI
-            printf "Enter height in inches: "
+            printf "How many inches was your measurement? "
             read -r GAUGE_HEIGHT
             ;;
         *)
@@ -137,7 +221,7 @@ get_leg_pattern() {
     print_section "Leg Pattern Choice"
 
     printf "Choose leg pattern:\n"
-    printf "1) Stockinette (smooth, V-pattern)\n"
+    printf "1) Stockinette\n"
     printf "2) Ribbing\n"
     printf "Choice (1-2): "
     read -r leg_choice
@@ -179,71 +263,126 @@ get_leg_pattern() {
 get_toe_type() {
     print_section "Toe Type Selection"
 
-    printf "Choose toe construction:\n"
-    printf "1) Short Row Toe (wrapped stitches)\n"
-    printf "2) Wedge Toe (decreases on sides)\n"
-    printf "Choice (1-2): "
-    read -r toe_choice
+    if [ "$CONSTRUCTION_METHOD" = "toe-up" ]; then
+        printf "Choose toe construction (Toe-Up):\n"
+        printf "1) Short Row Toe (wrapped stitches)\n"
+        printf "2) Wedge Toe with Judy's Magic Cast On\n"
+        printf "Choice (1-2): "
+        read -r toe_choice
 
-    case "$toe_choice" in
-        1)
-            TOE_TYPE="short row"
-            ;;
-        2)
-            TOE_TYPE="wedge"
-            ;;
-        *)
-            TOE_TYPE="short row"
-            ;;
-    esac
+        case "$toe_choice" in
+            1)
+                TOE_TYPE="short row"
+                ;;
+            2)
+                TOE_TYPE="wedge"
+                ;;
+            *)
+                TOE_TYPE="short row"
+                ;;
+        esac
+    else
+        printf "Choose toe construction (Cuff-Down):\n"
+        printf "1) Short Row Toe (wrapped stitches)\n"
+        printf "2) Wedge Toe (decreases on sides)\n"
+        printf "Choice (1-2): "
+        read -r toe_choice
+
+        case "$toe_choice" in
+            1)
+                TOE_TYPE="short row"
+                ;;
+            2)
+                TOE_TYPE="wedge"
+                ;;
+            *)
+                TOE_TYPE="short row"
+                ;;
+        esac
+    fi
 }
 
 get_heel_type() {
     print_section "Heel Type Selection"
 
-    printf "Choose heel construction:\n"
-    printf "1) Short Row Heel (wrapped stitches)\n"
-    printf "2) Afterthought Heel (knit toe first, pick up after)\n"
-    printf "Choice (1-2): "
-    read -r heel_choice
+    if [ "$CONSTRUCTION_METHOD" = "toe-up" ]; then
+        printf "Choose heel construction (Toe-Up):\n"
+        printf "1) Short Row Heel (wrapped stitches)\n"
+        printf "2) Afterthought Heel (knit leg first, pick up after)\n"
+        printf "Choice (1-2): "
+        read -r heel_choice
 
-    case "$heel_choice" in
-        1)
-            HEEL_TYPE="short row"
-            ;;
-        2)
-            HEEL_TYPE="afterthought"
-            ;;
-        *)
-            HEEL_TYPE="short row"
-            ;;
-    esac
+        case "$heel_choice" in
+            1)
+                HEEL_TYPE="short row"
+                ;;
+            2)
+                HEEL_TYPE="afterthought"
+                ;;
+            *)
+                HEEL_TYPE="short row"
+                ;;
+        esac
+    else
+        printf "Choose heel construction (Cuff-Down):\n"
+        printf "1) Short Row Heel (wrapped stitches)\n"
+        printf "2) Afterthought Heel (knit foot first, pick up after)\n"
+        printf "3) Heel Flap & Gusset (traditional structure)\n"
+        printf "Choice (1-3): "
+        read -r heel_choice
+
+        case "$heel_choice" in
+            1)
+                HEEL_TYPE="short row"
+                ;;
+            2)
+                HEEL_TYPE="afterthought"
+                ;;
+            3)
+                HEEL_TYPE="heel flap and gusset"
+                ;;
+            *)
+                HEEL_TYPE="short row"
+                ;;
+        esac
+    fi
 }
 
 get_lengths() {
     print_section "Leg and Cuff Lengths"
 
-    printf "Leg length (from cuff to heel, in inches): "
-    read -r LEG_LENGTH
+    if [ "$CONSTRUCTION_METHOD" = "toe-up" ]; then
+        printf "Leg length (from foot to cuff, in %s): " "$UNIT_LENGTH"
+    else
+        printf "Leg length (from cuff to heel, in %s): " "$UNIT_LENGTH"
+    fi
+    read -r input_leg_length
+    if [ "$MEASUREMENT_UNITS" = "metric" ]; then
+        LEG_LENGTH=$(cm_to_inches "$input_leg_length")
+    else
+        LEG_LENGTH="$input_leg_length"
+    fi
 
-    printf "Cuff length (in inches): "
-    read -r CUFF_LENGTH
+    printf "Cuff length (in %s): " "$UNIT_LENGTH"
+    read -r input_cuff_length
+    if [ "$MEASUREMENT_UNITS" = "metric" ]; then
+        CUFF_LENGTH=$(cm_to_inches "$input_cuff_length")
+    else
+        CUFF_LENGTH="$input_cuff_length"
+    fi
 }
 
 get_yarn_info() {
-    print_section "Yarn Information"
+    print_section "Yarn Information (Optional)"
 
-    printf "Yarn brand: "
+    printf "Yarn brand (leave blank to skip): "
     read -r YARN_BRAND
 
-    printf "Yarn weight (e.g., Fingering, Sport, DK): "
+    printf "Yarn weight (e.g., Fingering, Sport, DK) (leave blank to skip): "
     read -r YARN_WEIGHT
 
-    printf "Yarn color and/or dye lot: "
+    printf "Yarn color and/or dye lot (leave blank to skip): "
     read -r YARN_COLOR
-
-    printf "Yardage available (yards): "
-    read -r YARN_YARDAGE
 }
 
 get_needle_info() {
@@ -282,19 +421,9 @@ get_needle_info() {
 calculate_cast_on() {
     # Cast-on stitches based on foot circumference and gauge
     # Formula: (foot circumference * stitches per inch) / gauge width
-    # Using shell arithmetic with integer math
+    # Use awk to handle decimal gauge values
 
-    # Convert to integers (multiply by 10 to preserve one decimal place)
-    local fc_int=$(printf "%.0f" "$(echo "$FOOT_CIRCUMFERENCE * 10" | awk '{printf "%.0f", $1*10}')")
-    local gs_int=$((GAUGE_SPI * 10))
-
-    # Calculate: fc_int * gs_int / (gw * 10 * 10)
-    CAST_ON=$(( (fc_int * GAUGE_SPI) / (GAUGE_WIDTH * 10) ))
-
-    # If result seems wrong (might happen with pure shell), use fallback
-    if [ "$CAST_ON" -lt 20 ]; then
-        CAST_ON=$(printf "%.0f" "$FOOT_CIRCUMFERENCE" | awk -v gs="$GAUGE_SPI" -v gw="$GAUGE_WIDTH" '{printf "%.0f", ($1 * gs) / gw}')
-    fi
+    CAST_ON=$(printf "%s\n" "$FOOT_CIRCUMFERENCE" | awk -v gs="$GAUGE_SPI" -v gw="$GAUGE_WIDTH" '{printf "%.0f", ($1 * gs) / gw}')
 
     # Round to nearest even number for easier ribbing patterns
     if [ $((CAST_ON % 2)) -eq 1 ]; then
@@ -315,27 +444,37 @@ calculate_cuff_rounds() {
 }
 
 calculate_toe_stitches() {
-    # For wedge toe: calculate rounds needed
-    # For short row toe: calculate number of rows
-    TOE_ROUNDS=$((CAST_ON / 4))
+    # Toe stitches: approximately 1/3 of cast-on total
+    # For short row toe: stitches left unwrapped at start
+    # For wedge toe: cast-on stitches for toe portion
+    TOE_ROUNDS=$((CAST_ON / 3))
+
+    # Ensure even number for division onto 2 needles
+    if [ $((TOE_ROUNDS % 2)) -eq 1 ]; then
+        TOE_ROUNDS=$((TOE_ROUNDS - 1))
+    fi
+
+    # Each needle gets half
+    TOE_PER_NEEDLE=$((TOE_ROUNDS / 2))
 }
 
 calculate_heel_stitches() {
-    # Heel flap stitches are typically half of cast-on
+    # Heel flap stitches are half of cast-on
     HEEL_STITCHES=$((CAST_ON / 2))
-}
 
-calculate_yardage_needed() {
-    # Rough estimate: multiply cast-on by total rounds
-    local total_rounds=$((CAST_ON * (LEG_ROUNDS + CUFF_ROUNDS + TOE_ROUNDS)))
-    # Estimate: each stitch round uses approximately (cast-on stitches / 600) yards
-    ESTIMATED_YARDAGE=$(( total_rounds / 600 ))
+    # For short row and afterthought heels, the unwrapped/remaining stitches
+    # should be approximately 1/3 of the heel stitches
+    HEEL_WRAP_STITCHES=$((HEEL_STITCHES / 3))
 
-    # If too small, use alternative calculation
-    if [ "$ESTIMATED_YARDAGE" -lt 30 ]; then
-        ESTIMATED_YARDAGE=$(( (CAST_ON * (LEG_ROUNDS + CUFF_ROUNDS)) / 500 ))
+    # Ensure even number for division onto 2 needles
+    if [ $((HEEL_WRAP_STITCHES % 2)) -eq 1 ]; then
+        HEEL_WRAP_STITCHES=$((HEEL_WRAP_STITCHES - 1))
     fi
+
+    # Each needle gets half
+    HEEL_PER_NEEDLE=$((HEEL_WRAP_STITCHES / 2))
 }
+
 
 # ============================================================================
 # REVIEW AND CONFIRM FUNCTIONS
@@ -345,9 +484,18 @@ display_summary() {
     print_header
     print_section "Pattern Summary - Review Your Selections"
 
+    printf "\n%bCONSTRUCTION METHOD:%b\n" "$BOLD" "$RESET"
+    printf "  Method: %s\n" "$CONSTRUCTION_METHOD"
+    printf "  Measurement units: %s\n" "$MEASUREMENT_UNITS"
+
     printf "\n%bFOOT MEASUREMENTS:%b\n" "$BOLD" "$RESET"
-    printf "  Foot length: %.1f inches\n" "$FOOT_LENGTH"
-    printf "  Foot circumference: %.1f inches\n" "$FOOT_CIRCUMFERENCE"
+    if [ "$MEASUREMENT_UNITS" = "metric" ]; then
+        printf "  Foot length: %.1f cm\n" "$(inches_to_cm "$FOOT_LENGTH")"
+        printf "  Foot circumference: %.1f cm\n" "$(inches_to_cm "$FOOT_CIRCUMFERENCE")"
+    else
+        printf "  Foot length: %.1f inches\n" "$FOOT_LENGTH"
+        printf "  Foot circumference: %.1f inches\n" "$FOOT_CIRCUMFERENCE"
+    fi
 
     printf "\n%bGAUGE:%b\n" "$BOLD" "$RESET"
     printf "  Stitch gauge: %.1f stitches per inch\n" "$GAUGE_SPI"
@@ -359,8 +507,13 @@ display_summary() {
     printf "  Heel type: %s\n" "$HEEL_TYPE"
 
     printf "\n%bLENGTHS:%b\n" "$BOLD" "$RESET"
-    printf "  Leg length: %.1f inches\n" "$LEG_LENGTH"
-    printf "  Cuff length: %.1f inches\n" "$CUFF_LENGTH"
+    if [ "$MEASUREMENT_UNITS" = "metric" ]; then
+        printf "  Leg length: %.1f cm\n" "$(inches_to_cm "$LEG_LENGTH")"
+        printf "  Cuff length: %.1f cm\n" "$(inches_to_cm "$CUFF_LENGTH")"
+    else
+        printf "  Leg length: %.1f inches\n" "$LEG_LENGTH"
+        printf "  Cuff length: %.1f inches\n" "$CUFF_LENGTH"
+    fi
 
     printf "\n%bCALCULATED STITCH COUNTS:%b\n" "$BOLD" "$RESET"
     printf "  Cast-on: %d stitches\n" "$CAST_ON"
@@ -368,12 +521,19 @@ display_summary() {
     printf "  Cuff rounds: %d\n" "$CUFF_ROUNDS"
     printf "  Heel stitches: %d\n" "$HEEL_STITCHES"
 
-    printf "\n%bYARN:%b\n" "$BOLD" "$RESET"
-    printf "  Brand: %s\n" "$YARN_BRAND"
-    printf "  Weight: %s\n" "$YARN_WEIGHT"
-    printf "  Color/Dye lot: %s\n" "$YARN_COLOR"
-    printf "  Yardage available: %d yards\n" "$YARN_YARDAGE"
-    printf "  Estimated yardage needed: %d yards\n" "$ESTIMATED_YARDAGE"
+    # Only show yarn section if user entered any yarn info
+    if [ -n "$YARN_BRAND" ] || [ -n "$YARN_WEIGHT" ] || [ -n "$YARN_COLOR" ]; then
+        printf "\n%bYARN:%b\n" "$BOLD" "$RESET"
+        if [ -n "$YARN_BRAND" ]; then
+            printf "  Brand: %s\n" "$YARN_BRAND"
+        fi
+        if [ -n "$YARN_WEIGHT" ]; then
+            printf "  Weight: %s\n" "$YARN_WEIGHT"
+        fi
+        if [ -n "$YARN_COLOR" ]; then
+            printf "  Color/Dye lot: %s\n" "$YARN_COLOR"
+        fi
+    fi
 
     printf "\n%bNEEDLES:%b\n" "$BOLD" "$RESET"
     printf "  Size: %s\n" "$NEEDLE_SIZE"
@@ -399,53 +559,62 @@ confirm_changes() {
 edit_selection() {
     print_header
     printf "What would you like to change?\n"
-    printf "1) Foot size\n"
-    printf "2) Gauge\n"
-    printf "3) Leg pattern\n"
-    printf "4) Toe type\n"
-    printf "5) Heel type\n"
-    printf "6) Lengths (leg and cuff)\n"
-    printf "7) Yarn information\n"
-    printf "8) Needle information\n"
-    printf "9) Return to summary\n"
-    printf "\nChoice (1-9): "
+    printf "1) Construction method (cuff-down/toe-up)\n"
+    printf "2) Measurement units (imperial/metric)\n"
+    printf "3) Foot size\n"
+    printf "4) Gauge\n"
+    printf "5) Leg pattern\n"
+    printf "6) Toe type\n"
+    printf "7) Heel type\n"
+    printf "8) Lengths (leg and cuff)\n"
+    printf "9) Yarn information\n"
+    printf "10) Needle information\n"
+    printf "11) Return to summary\n"
+    printf "\nChoice (1-11): "
     read -r edit_choice
 
     case "$edit_choice" in
         1)
+            get_construction_method
+            get_toe_type
+            get_heel_type
+            ;;
+        2)
+            get_measurement_units
+            ;;
+        3)
             get_foot_size
             calculate_cast_on
             calculate_toe_stitches
             calculate_heel_stitches
             ;;
-        2)
+        4)
             get_gauge
             calculate_cast_on
             calculate_leg_rounds
             calculate_cuff_rounds
             ;;
-        3)
+        5)
             get_leg_pattern
             ;;
-        4)
+        6)
             get_toe_type
             ;;
-        5)
+        7)
             get_heel_type
             ;;
-        6)
+        8)
             get_lengths
             calculate_leg_rounds
             calculate_cuff_rounds
-            calculate_yardage_needed
-            ;;
-        7)
-            get_yarn_info
-            ;;
-        8)
-            get_needle_info
             ;;
         9)
+            get_yarn_info
+            ;;
+        10)
+            get_needle_info
+            ;;
+        11)
             return 1
             ;;
         *)
@@ -463,28 +632,61 @@ edit_selection() {
 generate_pattern() {
     PATTERN_TEXT=""
 
+    # Format measurements based on units
+    if [ "$MEASUREMENT_UNITS" = "metric" ]; then
+        local foot_len=$(inches_to_cm "$FOOT_LENGTH")
+        local foot_circ=$(inches_to_cm "$FOOT_CIRCUMFERENCE")
+        local leg_len=$(inches_to_cm "$LEG_LENGTH")
+        local cuff_len=$(inches_to_cm "$CUFF_LENGTH")
+        local unit_display="cm"
+    else
+        local foot_len="$(printf "%.1f" "$FOOT_LENGTH")"
+        local foot_circ="$(printf "%.1f" "$FOOT_CIRCUMFERENCE")"
+        local leg_len="$(printf "%.1f" "$LEG_LENGTH")"
+        local cuff_len="$(printf "%.1f" "$CUFF_LENGTH")"
+        local unit_display="inches"
+    fi
+
+    # Calculate actual gauge per inch (divide by measurement width/height)
+    local actual_spi=$(printf "%.1f" "$GAUGE_SPI" | awk -v gw="$GAUGE_WIDTH" '{printf "%.1f", $1 / gw}')
+    local actual_rpi=$(printf "%.1f" "$GAUGE_RPI" | awk -v gh="$GAUGE_HEIGHT" '{printf "%.1f", $1 / gh}')
+
+    # Format construction method details (order varies by method)
+    local construction_details
+    if [ "$CONSTRUCTION_METHOD" = "toe-up" ]; then
+        construction_details="$CONSTRUCTION_METHOD ($TOE_TYPE toe, $HEEL_TYPE heel)"
+    else
+        construction_details="$CONSTRUCTION_METHOD ($HEEL_TYPE heel, $TOE_TYPE toe)"
+    fi
+
     PATTERN_TEXT="${PATTERN_TEXT}================================================================================
-CUSTOM SOCK KNITTING PATTERN
+CUSTOM SOCK KNITTING PATTERN ($CONSTRUCTION_METHOD)
 Generated from Basic Sock Pattern Generator
 ================================================================================
 
 PROJECT DETAILS
-===============
-Yarn: $YARN_BRAND, $YARN_WEIGHT, Color: $YARN_COLOR
-Yardage available: $YARN_YARDAGE yards
-Estimated yardage needed: $ESTIMATED_YARDAGE yards
+==============="
 
+    # Add yarn info if user provided any
+    if [ -n "$YARN_BRAND" ] || [ -n "$YARN_WEIGHT" ] || [ -n "$YARN_COLOR" ]; then
+        PATTERN_TEXT="${PATTERN_TEXT}
+Yarn: $YARN_BRAND, $YARN_WEIGHT, Color: $YARN_COLOR"
+    fi
+
+    PATTERN_TEXT="${PATTERN_TEXT}
 Needle Size: $NEEDLE_SIZE
 Needle Method: $NEEDLE_METHOD
 
+Construction Method: $construction_details
+
 MEASUREMENTS & GAUGE
 ====================
-Foot Length: $(printf "%.1f" "$FOOT_LENGTH") inches
-Foot Circumference: $(printf "%.1f" "$FOOT_CIRCUMFERENCE") inches
-Leg Length: $(printf "%.1f" "$LEG_LENGTH") inches
-Cuff Length: $(printf "%.1f" "$CUFF_LENGTH") inches
+Foot Length: $foot_len $unit_display
+Foot Circumference: $foot_circ $unit_display
+Leg Length: $leg_len $unit_display
+Cuff Length: $cuff_len $unit_display
 
-Gauge: $(printf "%.1f" "$GAUGE_SPI") stitches and $(printf "%.1f" "$GAUGE_RPI") rows per inch
+Gauge: $actual_spi stitches and $actual_rpi rows per inch
 
 STITCH COUNTS
 ==============
@@ -494,42 +696,86 @@ Divide evenly onto needle method of choice.
 Cuff rounds: $CUFF_ROUNDS
 Leg rounds: $LEG_ROUNDS
 Heel stitches: $HEEL_STITCHES
-Toe rounds: $TOE_ROUNDS
+Toe starting stitches: $TOE_ROUNDS
 
 PATTERN CONSTRUCTION
 ====================
 
-CUFF SECTION ($CUFF_LENGTH inches / $CUFF_ROUNDS rounds)
--------
-Ribbing pattern: $LEG_PATTERN_NOTES
+"
 
-Instructions:
-- Cast on $CAST_ON stitches loosely using long-tail cast-on
-- Join in the round, being careful not to twist
-- Work $CUFF_ROUNDS rounds of $LEG_PATTERN
-- Tip: Keep first few stitches lose to avoid tight cuff
+    # Different structure for toe-up vs cuff-down
+    if [ "$CONSTRUCTION_METHOD" = "toe-up" ]; then
+        # TOE-UP STRUCTURE: TOE → FOOT → HEEL → LEG → CUFF → (optional HEEL if afterthought)
+        case "$TOE_TYPE" in
+            "short row")
+                PATTERN_TEXT="${PATTERN_TEXT}TOE SECTION (SHORT ROW METHOD) - START HERE
+--------
+Initial Cast-On:
+- Cast on $TOE_ROUNDS stitches total (approximately 1/3 of your finished stitch count)
+- Divide: $TOE_PER_NEEDLE stitches on each needle
+- Divide evenly onto your chosen needles
+- Join in the round carefully
 
-LEG SECTION ($LEG_LENGTH inches / $LEG_ROUNDS rounds)
--------
-Pattern: $LEG_PATTERN
+Short Rows:
+- Round 1: Knit to last 2 stitches, W&T (wrap and turn)
+- Round 2: Purl to last 2 stitches, W&T
+- Each round, work to 2 stitches before the gap, W&T
+- Continue until only a few stitches remain unwrapped ($HEEL_WRAP_STITCHES stitches unwrapped)
+- Pick up wraps and knit them together with their stitches
+- You now have approximately $TOE_ROUNDS stitches
 
-Instructions:
-- $LEG_PATTERN_NOTES
-- Continue for $LEG_ROUNDS rounds
-- Leg should measure approximately $LEG_LENGTH inches from cuff
+Toe Shaping:
+- Next, increase evenly to $CAST_ON stitches:
+  - Round 1: K1, M1, knit to last 2 stitches, M1, K1 (on each side)
+  - Continue increasing until you have $CAST_ON stitches
+- Make increases every other round until at full stitch count
+
+"
+                ;;
+            "wedge")
+                PATTERN_TEXT="${PATTERN_TEXT}TOE SECTION (WEDGE TOE WITH JUDY'S MAGIC CAST ON) - START HERE
+--------
+Setup with Judy's Magic Cast On:
+- Use Judy's Magic method or your preferred provisional cast-on
+- Cast on $TOE_ROUNDS stitches total (approximately 1/3 of your finished stitch count)
+  - $TOE_PER_NEEDLE stitches on top needle
+  - $TOE_PER_NEEDLE stitches on bottom needle
+- This creates two parallel rows of stitches ready to join
+
+Initial Rounds:
+- Pick up $TOE_PER_NEEDLE stitches from the bottom strand
+- Now you have $CAST_ON stitches total (half from above, half from below)
+- Join in the round carefully
+
+Wedge Toe Increases:
+- Round 1: Knit all stitches
+- Round 2: K1, M1, knit to last 2 stitches, M1, K1 (on each side)
+- Repeat rounds 1-2, working increases every other round
+- Continue until you have $CAST_ON stitches total
+
+"
+                ;;
+        esac
+
+        # FOOT SECTION (for toe-up socks, after toe shaping)
+        PATTERN_TEXT="${PATTERN_TEXT}FOOT SECTION
+--------
+- Continue in stockinette stitch for approximately $foot_len $unit_display
+- Foot should measure from toe approximately $foot_len $unit_display
 
 "
 
-    case "$HEEL_TYPE" in
-        "short row")
-            PATTERN_TEXT="${PATTERN_TEXT}HEEL FLAP (SHORT ROW METHOD)
+        # HEEL PLACEMENT/SETUP (for toe-up socks, before leg)
+        case "$HEEL_TYPE" in
+            "short row")
+                PATTERN_TEXT="${PATTERN_TEXT}HEEL SECTION (SHORT ROW METHOD)
 --------
-Heel flap is worked back and forth on $HEEL_STITCHES stitches (half of cast-on).
+Heel is worked back and forth on $HEEL_STITCHES stitches (half of cast-on).
 
 Setup:
-- Knit $((CAST_ON / 2)) stitches, turn (leaving remaining stitches to be picked up later)
+- Knit $((CAST_ON / 2)) stitches, turn (leaving remaining stitches on hold for leg)
 
-Heel flap:
+Heel Flap:
 - Work back and forth on $HEEL_STITCHES stitches using slip stitch selvedge
 - Row 1 (RS): Sl1, knit to end
 - Row 2 (WS): Sl1, purl to end
@@ -538,114 +784,286 @@ Heel flap:
 
 Short Row Turning:
 - Work $((HEEL_STITCHES - 1)) stitches, W&T (wrap and turn)
-- Work down to 1 stitch before the gap, W&T
-- Continue until you have worked the wrapped stitches
+- Work to 1 stitch before the gap, W&T
+- Continue until $HEEL_WRAP_STITCHES stitches remain unwrapped (approximately 1/3 of heel stitches: $HEEL_WRAP_STITCHES total, $HEEL_PER_NEEDLE per needle)
 - Pick up wraps and work them together with their stitches
 
-Re-shaping the Sock:
+Reshaping:
 - Pick up stitches along the side of the heel flap
-- Continue around the foot to the other side
+- Continue around to the leg stitches on hold
 - Pick up stitches on the other side of heel flap
-- You should be back to $CAST_ON stitches
-
-FOOT SECTION
---------
-- Continue in stockinette stitch (or pattern of choice) until sock measures
-  approximately $FOOT_LENGTH inches from back of heel
-
-TOE (SHORT ROW METHOD)
-------
-- Work short rows, decreasing around the foot
-- Round 1: Work to last 2 stitches of first side, K2tog
-- Round 2: Work to last 2 stitches of other side, K2tog
-- Continue until approximately 20-24 stitches remain
-- Graft remaining stitches using Kitchener stitch
+- You should now have $CAST_ON stitches ready for leg
 
 "
-            ;;
-        "afterthought")
-            PATTERN_TEXT="${PATTERN_TEXT}HEEL SETUP (AFTERTHOUGHT METHOD)
+                ;;
+            "afterthought")
+                PATTERN_TEXT="${PATTERN_TEXT}HEEL PLACEMENT (AFTERTHOUGHT METHOD)
 --------
-For afterthought heel, you'll knit the leg and foot, then come back to pick up stitches for heel.
+Setting up for afterthought heel - you'll knit the heel after finishing the cuff.
 
-To mark heel placement:
-- After completing leg, knit across half the stitches ($((CAST_ON / 2)))
-- Replace the stitches you just knit with scrap yarn or waste yarn
-- Continue with remaining $((CAST_ON / 2)) stitches
+Heel Marker:
+- Knit across $((CAST_ON / 2)) stitches (half the total)
+- Replace these $HEEL_STITCHES stitches with waste yarn
+  (Knit 2 rows with waste yarn over these stitches, return yarn to main ball)
+- Continue knitting the remaining $((CAST_ON / 2)) stitches with main yarn
 
-FOOT SECTION (WITHOUT HEEL)
+The waste yarn marker now holds your future heel stitches.
+
+"
+                ;;
+        esac
+
+        # LEG SECTION (for toe-up socks)
+        PATTERN_TEXT="${PATTERN_TEXT}LEG SECTION ($leg_len $unit_display / $LEG_ROUNDS rounds)
+-------
+Pattern: $LEG_PATTERN
+
+Instructions:
+- $LEG_PATTERN_NOTES
+- Continue for $LEG_ROUNDS rounds
+- Leg should measure approximately $leg_len $unit_display from foot
+
+"
+
+        # CUFF SECTION (for toe-up socks)
+        PATTERN_TEXT="${PATTERN_TEXT}CUFF SECTION ($cuff_len $unit_display / $CUFF_ROUNDS rounds)
+-------
+Ribbing pattern: $LEG_PATTERN_NOTES
+
+Instructions:
+- Work $CUFF_ROUNDS rounds of $LEG_PATTERN
+- Bind off loosely in pattern
+
+"
+
+        # AFTERTHOUGHT HEEL INSTRUCTIONS (if applicable, at the very end for toe-up)
+        if [ "$HEEL_TYPE" = "afterthought" ]; then
+            PATTERN_TEXT="${PATTERN_TEXT}HEEL SECTION (AFTERTHOUGHT - work after cuff is complete)
 --------
-- Continue in stockinette from the waste yarn marker
-- Knit around with remaining $((CAST_ON / 2)) stitches
-- Continue for approximately $FOOT_LENGTH inches
+After finishing and binding off the cuff:
 
-TOE SECTION
---------
-- When foot length is reached, work toe of choice
-- Many knitters use wedge toe for afterthought heels
+Setup for Heel:
+- Carefully remove the waste yarn from your heel marker (placed during the heel placement section)
+- Pick up $HEEL_STITCHES stitches from below the waste yarn
+- Pick up $HEEL_STITCHES stitches from above the waste yarn
+- You now have $HEEL_STITCHES stitches for your heel
 
-Heel pickup (after foot complete):
-- Remove waste yarn from heel marker
-- Pick up $HEEL_STITCHES stitches from below and above waste yarn
-- You now have approximately $HEEL_STITCHES stitches for heel flap
-- Work short row heel as described below:
-
-SHORT ROW HEEL (for afterthought):
-- Work back and forth on heel stitches
+Heel Flap:
+- Work back and forth on these $HEEL_STITCHES stitches using slip stitch selvedge
 - Row 1 (RS): Sl1, knit to end
 - Row 2 (WS): Sl1, purl to end
-- Repeat for approximately $((HEEL_STITCHES * 2 / 3)) rows
-- Work short row turns at center of heel
-- Graft stitches or bind off when complete
+- Repeat rows 1-2 for approximately $((HEEL_STITCHES * 2 / 3)) rows
+- Heel flap should be roughly square
+
+Short Row Heel Turning:
+- Work $((HEEL_STITCHES - 1)) stitches, W&T (wrap and turn)
+- Work to 1 stitch before the gap, W&T
+- Continue until $HEEL_WRAP_STITCHES stitches remain unwrapped (approximately 1/3 of heel stitches: $HEEL_WRAP_STITCHES total, $HEEL_PER_NEEDLE per needle)
+- Pick up wraps with their stitches and knit together
+- Graft or bind off remaining stitches
 
 "
-            ;;
-    esac
+        fi
 
-    case "$TOE_TYPE" in
-        "short row")
-            PATTERN_TEXT="${PATTERN_TEXT}TOE (SHORT ROW METHOD)
+    else
+        # CUFF-DOWN STRUCTURE: CUFF → LEG → HEEL → FOOT → TOE → (optional HEEL if afterthought)
+        PATTERN_TEXT="${PATTERN_TEXT}CUFF SECTION ($cuff_len $unit_display / $CUFF_ROUNDS rounds) - START HERE
+-------
+Ribbing pattern: $LEG_PATTERN_NOTES
+
+Instructions:
+- Cast on $CAST_ON stitches loosely using long-tail cast-on
+- Join in the round, being careful not to twist
+- Work $CUFF_ROUNDS rounds of $LEG_PATTERN
+- Tip: Keep first few stitches loose to avoid tight cuff
+
+"
+
+        # LEG SECTION (for cuff-down socks)
+        PATTERN_TEXT="${PATTERN_TEXT}LEG SECTION ($leg_len $unit_display / $LEG_ROUNDS rounds)
+-------
+Pattern: $LEG_PATTERN
+
+Instructions:
+- $LEG_PATTERN_NOTES
+- Continue for $LEG_ROUNDS rounds
+- Leg should measure approximately $leg_len $unit_display from cuff
+
+"
+
+        # HEEL PLACEMENT/SETUP (for cuff-down socks)
+        case "$HEEL_TYPE" in
+            "short row")
+                PATTERN_TEXT="${PATTERN_TEXT}HEEL SECTION (SHORT ROW METHOD)
 --------
-Short row toe creates a rounded point and is useful for wider feet.
+Heel is worked back and forth on $HEEL_STITCHES stitches (half of cast-on).
+
+Setup:
+- Knit $((CAST_ON / 2)) stitches, turn (leaving remaining stitches on hold for foot)
+
+Heel Flap:
+- Work back and forth on $HEEL_STITCHES stitches using slip stitch selvedge
+- Row 1 (RS): Sl1, knit to end
+- Row 2 (WS): Sl1, purl to end
+- Repeat rows 1-2 for approximately $((HEEL_STITCHES * 2 / 3)) rows
+- Heel flap should be roughly square
+
+Short Row Turning:
+- Work $((HEEL_STITCHES - 1)) stitches, W&T (wrap and turn)
+- Work to 1 stitch before the gap, W&T
+- Continue until $HEEL_WRAP_STITCHES stitches remain unwrapped (approximately 1/3 of heel stitches: $HEEL_WRAP_STITCHES total, $HEEL_PER_NEEDLE per needle)
+- Pick up wraps and work them together with their stitches
+
+Reshaping:
+- Pick up stitches along the side of the heel flap
+- Continue around to the foot stitches on hold
+- Pick up stitches on the other side of heel flap
+- You should now have $CAST_ON stitches ready for foot
+
+"
+                ;;
+            "afterthought")
+                PATTERN_TEXT="${PATTERN_TEXT}HEEL PLACEMENT (AFTERTHOUGHT METHOD)
+--------
+Setting up for afterthought heel - you'll knit the heel after completing the foot and toe.
+
+Heel Marker:
+- Knit across $((CAST_ON / 2)) stitches (half the total)
+- Replace these $HEEL_STITCHES stitches with waste yarn
+  (Knit 2 rows with waste yarn over these stitches, return yarn to main ball)
+- Continue knitting the remaining $((CAST_ON / 2)) stitches with main yarn
+
+The waste yarn marker now holds your future heel stitches.
+
+"
+                ;;
+            "heel flap and gusset")
+                PATTERN_TEXT="${PATTERN_TEXT}HEEL SECTION (HEEL FLAP & GUSSET - TRADITIONAL METHOD)
+--------
+This traditional heel creates a well-fitted heel with a gusset.
+
+Setup:
+- Work across $((CAST_ON / 2)) stitches for heel (slip remaining stitches to holder for foot)
+
+Heel Flap:
+- Work back and forth on $HEEL_STITCHES stitches
+- Row 1 (RS): Sl1, knit to end
+- Row 2 (WS): Sl1, purl to end
+- Repeat rows 1-2 for approximately $((HEEL_STITCHES * 2 / 3)) rows (aim for square)
+
+Heel Turn (Short Rows):
+- Work $((HEEL_STITCHES - 1)) stitches, W&T (wrap and turn)
+- Pull yarn to front, skip next stitch, slip it back, return yarn to back
+- Purl back to 1 stitch before gap, W&T
+- Continue working toward center, working wraps with stitches
+- Until you have worked all but a few stitches
+
+Picking Up the Gusset:
+- Pick up $((HEEL_STITCHES / 2 + 2)) stitches along one side of heel flap
+- Knit across heel stitches
+- Pick up $((HEEL_STITCHES / 2 + 2)) stitches along other side
+- You now have more than $CAST_ON stitches (will decrease back down)
+
+Gusset Decreases:
+- Round 1: Knit around
+- Round 2 (decrease round):
+  - Knit to last 3 stitches before center foot stitches, K2tog, K1
+  - Knit across foot stitches
+  - K1, ssk to decrease other gusset side
+- Continue decreasing every other round until back to $CAST_ON stitches
+
+"
+                ;;
+        esac
+
+        # FOOT SECTION (for cuff-down socks, after heel)
+        PATTERN_TEXT="${PATTERN_TEXT}FOOT SECTION
+--------
+- Continue in stockinette stitch until sock measures approximately $foot_len $unit_display from back of heel
+
+"
+
+        # TOE SECTION (for cuff-down socks, after foot)
+        case "$TOE_TYPE" in
+            "short row")
+                PATTERN_TEXT="${PATTERN_TEXT}TOE SECTION (SHORT ROW METHOD)
+------
+Short row toe creates a rounded point and works well with structured feet.
 
 Setup:
 - Knit to middle of sole with $CAST_ON stitches
 - Begin short rows at center of foot
 
-Toe decreases:
+Toe Decreases:
 - Turn work and work back across
 - Each row, work to 1-2 stitches before the gap
 - Wrap stitch and turn
-- Continue until limited stitches remain
+- Continue until $TOE_ROUNDS stitches remain unwrapped (approximately 1/3 of total stitches)
+  - Total remaining stitches: $TOE_ROUNDS ($TOE_PER_NEEDLE per needle)
 
 Finishing:
-- Graft remaining 16-20 stitches using Kitchener stitch
+- Graft remaining stitches using Kitchener stitch
 - Or bind off if stitches cannot be grafted
 
 "
-            ;;
-        "wedge")
-            PATTERN_TEXT="${PATTERN_TEXT}TOE (WEDGE METHOD)
---------
+                ;;
+            "wedge")
+                PATTERN_TEXT="${PATTERN_TEXT}TOE SECTION (WEDGE METHOD)
+------
 Wedge toe uses strategic decreases to create a tapered toe.
 
 Setup:
 - Work in stockinette until you need to begin toe decreases
-- Mark center stitches for decrease points
+- Divide stitches into 4 sections: right top, left top, right sole, left sole
 
-Decrease rounds:
-- Round 1: K1, ssk, knit to last 3 stitches, K2tog, K1 (on each side)
+Decrease Rounds:
+- Round 1:
+  * Right top: Knit to last 3, K2tog, K1
+  * Left top: K1, ssk, knit to end
+  * Right sole: Knit to last 3, K2tog, K1
+  * Left sole: K1, ssk, knit to end
 - Round 2: Knit all stitches
-- Alternate decrease rounds and knit rounds
+- Alternate decrease rounds and plain knit rounds
 
-Continue until approximately 8-12 stitches remain, then:
+Continue until approximately $TOE_ROUNDS stitches remain (approximately 1/3 of total stitches):
+  - Target stitches: $TOE_ROUNDS ($TOE_PER_NEEDLE per needle)
 - Cut yarn leaving 6-inch tail
 - Thread through remaining stitches
-- Pull tight and weave in ends
+- Pull tight and secure
 
 "
-            ;;
-    esac
+                ;;
+        esac
+
+        # AFTERTHOUGHT HEEL INSTRUCTIONS (if applicable, at the very end for cuff-down)
+        if [ "$HEEL_TYPE" = "afterthought" ]; then
+            PATTERN_TEXT="${PATTERN_TEXT}HEEL SECTION (AFTERTHOUGHT - work after toe is complete)
+--------
+After finishing and grafting/binding off the toe:
+
+Setup for Heel:
+- Carefully remove the waste yarn from your heel marker (placed during the heel placement section)
+- Pick up $HEEL_STITCHES stitches from below the waste yarn
+- Pick up $HEEL_STITCHES stitches from above the waste yarn
+- You now have $HEEL_STITCHES stitches for your heel
+
+Heel Flap:
+- Work back and forth on these $HEEL_STITCHES stitches using slip stitch selvedge
+- Row 1 (RS): Sl1, knit to end
+- Row 2 (WS): Sl1, purl to end
+- Repeat rows 1-2 for approximately $((HEEL_STITCHES * 2 / 3)) rows
+- Heel flap should be roughly square
+
+Short Row Heel Turning:
+- Work $((HEEL_STITCHES - 1)) stitches, W&T (wrap and turn)
+- Work to 1 stitch before the gap, W&T
+- Continue until $HEEL_WRAP_STITCHES stitches remain unwrapped (approximately 1/3 of heel stitches: $HEEL_WRAP_STITCHES total, $HEEL_PER_NEEDLE per needle)
+- Pick up wraps with their stitches and knit together
+- Graft or bind off remaining stitches
+
+"
+        fi
+    fi
 
     PATTERN_TEXT="${PATTERN_TEXT}
 FINISHING INSTRUCTIONS
@@ -655,17 +1073,9 @@ FINISHING INSTRUCTIONS
 3. Let dry flat or on sock blocker
 4. Try on with shoes you plan to wear
 
-CARE INSTRUCTIONS
-=================
-- Hand wash in cool water with gentle soap
-- Rinse thoroughly
-- Gently squeeze out excess water (do not wring)
-- Lay flat to dry
-- Store in cool, dry place with cedar or moth balls
-
 ================================================================================
 Pattern generated by Basic Sock Pattern Generator
-For updates and more patterns, visit: https://github.com/anthropics/Basic-Sock-Pattern-Generator
+$construction_details
 ================================================================================"
 
 }
@@ -733,7 +1143,14 @@ output_options() {
 # ============================================================================
 
 main() {
+    # Display welcome message
+    clear_screen
+    print_welcome
+    pause_for_user
+
     # Gather all input
+    get_construction_method
+    get_measurement_units
     get_foot_size
     get_gauge
     get_leg_pattern
@@ -749,7 +1166,6 @@ main() {
     calculate_cuff_rounds
     calculate_toe_stitches
     calculate_heel_stitches
-    calculate_yardage_needed
 
     # Review and allow changes
     while true; do
@@ -763,7 +1179,6 @@ main() {
             calculate_cuff_rounds
             calculate_toe_stitches
             calculate_heel_stitches
-            calculate_yardage_needed
             display_summary
             if ! confirm_changes; then
                 break 2
@@ -783,7 +1198,5 @@ main() {
     printf "Happy knitting!\n\n"
 }
 
-# Run main function if script is executed directly
-if [ "${0##*/}" = "sock_pattern_generator.sh" ]; then
-    main "$@"
-fi
+# Run main function
+main "$@"
