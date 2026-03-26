@@ -853,8 +853,9 @@ Wedge Toe Increases:
                 heel_rounds_used=$(printf "%.0f" | awk -v hs="$HEEL_STITCHES" -v hw="$HEEL_WRAP_STITCHES" '{printf "%.0f", (hs - hw) / 2}' <<< "")
                 ;;
             "short row")
-                # Short row heel: flap (HEEL_STITCHES * 2/3 rows) + wrapping phase
-                heel_rounds_used=$(printf "%.0f" | awk -v hs="$HEEL_STITCHES" -v hw="$HEEL_WRAP_STITCHES" '{printf "%.0f", hs * 2 / 3 + (hs - hw) / 2}' <<< "")
+                # Short row heel: wraps down and unwraps back up (no flap)
+                # Total rows = approximately (HEEL_STITCHES - HEEL_WRAP_STITCHES)
+                heel_rounds_used=$(printf "%.0f" | awk -v hs="$HEEL_STITCHES" -v hw="$HEEL_WRAP_STITCHES" '{printf "%.0f", hs - hw}' <<< "")
                 ;;
         esac
 
@@ -872,6 +873,7 @@ Wedge Toe Increases:
                 PATTERN_TEXT="${PATTERN_TEXT}HEEL SECTION (SHORT ROW METHOD)
 --------
 Heel is worked back and forth on $HEEL_STITCHES stitches (half of cast-on).
+Estimated rounds: approximately $((HEEL_STITCHES - HEEL_WRAP_STITCHES)) rows
 
 Setup:
 - Knit $((CAST_ON / 2)) stitches, turn (leaving remaining stitches on hold for leg)
@@ -931,9 +933,11 @@ Instructions:
 
         # AFTERTHOUGHT HEEL INSTRUCTIONS (if applicable, at the very end for toe-up)
         if [ "$HEEL_TYPE" = "afterthought" ]; then
+            local afterthought_heel_rounds=$((HEEL_STITCHES - HEEL_WRAP_STITCHES))
             PATTERN_TEXT="${PATTERN_TEXT}HEEL SECTION (AFTERTHOUGHT - work after cuff is complete)
 --------
 After finishing and binding off the cuff:
+Estimated rounds: approximately $afterthought_heel_rounds rounds
 
 Setup for Heel:
 - Carefully remove the waste yarn from your heel marker (placed during the heel placement section)
@@ -987,6 +991,7 @@ Instructions:
                 PATTERN_TEXT="${PATTERN_TEXT}HEEL SECTION (SHORT ROW METHOD)
 --------
 Heel is worked back and forth on $HEEL_STITCHES stitches (half of cast-on).
+Estimated rows: approximately $((HEEL_STITCHES - HEEL_WRAP_STITCHES)) rows
 
 Setup:
 - Knit $((CAST_ON / 2)) stitches, turn (leaving remaining stitches on hold for foot)
@@ -1044,7 +1049,7 @@ The waste yarn marker now holds your future heel stitches.
         # Calculate heel rounds based on heel type
         case "$HEEL_TYPE" in
             "short row")
-                heel_rounds_used_cd=$(printf "%.0f" | awk -v hs="$HEEL_STITCHES" -v hw="$HEEL_WRAP_STITCHES" '{printf "%.0f", hs * 2 / 3 + (hs - hw) / 2}' <<< "")
+                heel_rounds_used_cd=$(printf "%.0f" | awk -v hs="$HEEL_STITCHES" -v hw="$HEEL_WRAP_STITCHES" '{printf "%.0f", hs - hw}' <<< "")
                 ;;
             "afterthought")
                 heel_rounds_used_cd=$(printf "%.0f" | awk -v hs="$HEEL_STITCHES" -v hw="$HEEL_WRAP_STITCHES" '{printf "%.0f", (hs - hw) / 2}' <<< "")
@@ -1113,9 +1118,11 @@ Continue until approximately $TOE_ROUNDS stitches remain (approximately 1/3 of t
 
         # AFTERTHOUGHT HEEL INSTRUCTIONS (if applicable, at the very end for cuff-down)
         if [ "$HEEL_TYPE" = "afterthought" ]; then
+            local afterthought_heel_rounds_cd=$((HEEL_STITCHES - HEEL_WRAP_STITCHES))
             PATTERN_TEXT="${PATTERN_TEXT}HEEL SECTION (AFTERTHOUGHT - work after toe is complete)
 --------
 After finishing and grafting/binding off the toe:
+Estimated rounds: approximately $afterthought_heel_rounds_cd rounds
 
 Setup for Heel:
 - Carefully remove the waste yarn from your heel marker (placed during the heel placement section)
