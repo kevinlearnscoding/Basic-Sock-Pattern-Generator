@@ -40,8 +40,13 @@ pause_for_user() {
     read -r dummy
 }
 
+printf_wrapped() {
+    # Prints text with 80-character line wrapping
+    printf "%b" "$@" | fold -w 80 -s
+}
+
 print_welcome() {
-    printf "%b" "============================================\n${HIGHLIGHT}WELCOME TO THE BASIC SOCK PATTERN GENERATOR!${RESET}\n============================================\n\nThis tool will help you create a basic sock knitting pattern based on your measurements, gauge, and design preferences. Follow the prompts to input your information, review the generated pattern, and make any adjustments you'd like before finalizing it.\n\n${BOLD}NOTE: You must knit a gauge swatch before using this tool to ensure accurate stitch counts.${RESET}\n\nNOTE: This tool is for hand-knit socks - if you are looking for machine-knit sock patterns, please check out the resources linked in the README.\n\n${HIGHLIGHT}Let's get started!${RESET}\n" | fold -w 80 -s
+    printf "%b" "============================================\n${HIGHLIGHT}WELCOME TO THE BASIC SOCK PATTERN GENERATOR!${RESET}\n============================================\n\nThis tool will help you create a basic sock knitting pattern based on your measurements, gauge, and design preferences. Follow the prompts to input your information, review the generated pattern, and make any adjustments you'd like before finalizing it.\n\n${BOLD}NOTE: You must knit a gauge swatch in the round before using this tool to ensure accurate stitch counts.${RESET}\n\nNOTE: This tool is for hand-knit socks - if you are looking for machine-knit sock patterns, please check out the resources linked in the README.\n\n${HIGHLIGHT}Let's get started!${RESET}\n" | fold -w 80 -s
 }
 
 
@@ -75,8 +80,8 @@ get_measurement_units() {
     print_section "Measurement Units"
 
     printf "Which measurement system do you prefer?\n"
-    printf "1) Imperial (inches, yards)\n"
-    printf "2) Metric (centimeters, meters)\n"
+    printf "1) Imperial (inches)\n"
+    printf "2) Metric (centimeters)\n"
     printf "\nChoice (1-2): "
     read -r unit_choice
 
@@ -123,14 +128,20 @@ get_foot_size() {
         1)
             printf "\nUS Women's Shoe Size (5-13): "
             read -r size
+            SHOE_SIZE="$size"
+            SHOE_SIZE_TYPE="Women's"
             compute_foot_length_from_womens_size "$size"
             ;;
         2)
             printf "\nUS Men's Shoe Size (5-16): "
             read -r size
+            SHOE_SIZE="$size"
+            SHOE_SIZE_TYPE="Men's"
             compute_foot_length_from_mens_size "$size"
             ;;
         3)
+            SHOE_SIZE=""
+            SHOE_SIZE_TYPE=""
             if [ "$MEASUREMENT_UNITS" = "metric" ]; then
                 printf "\nFoot length (cm): "
             else
@@ -159,23 +170,25 @@ get_foot_size() {
             printf "Invalid choice. Using default size 8.\n"
             FOOT_LENGTH=9.5
             FOOT_CIRCUMFERENCE=8
+            SHOE_SIZE=""
+            SHOE_SIZE_TYPE=""
             ;;
     esac
 }
 
 compute_foot_length_from_womens_size() {
     # Approximate conversion: Women's size to foot length in inches
-    # Formula: 8.125 + (size * 0.3125)
+    # Formula: ((US Size + 21) / 3) * 0.9 for 90% (negative ease for proper fit)
     size=$1
-    FOOT_LENGTH=$(printf "%.1f" "$size" | awk '{printf "%.1f", 8.125 + ($1 * 0.3125)}')
+    FOOT_LENGTH=$(printf "%.1f" "$size" | awk '{printf "%.1f", (($1 + 21) / 3) * 0.9}')
     FOOT_CIRCUMFERENCE=$(printf "%.1f" "$size" | awk '{printf "%.1f", 7.5 + ($1 * 0.08)}')
 }
 
 compute_foot_length_from_mens_size() {
     # Approximate conversion: Men's size to foot length in inches
-    # Formula: 8.375 + (size * 0.3125)
+    # Formula: ((US Size + 22) / 3) * 0.9 for 90% (negative ease for proper fit)
     size=$1
-    FOOT_LENGTH=$(printf "%.1f" "$size" | awk '{printf "%.1f", 8.375 + ($1 * 0.3125)}')
+    FOOT_LENGTH=$(printf "%.1f" "$size" | awk '{printf "%.1f", (($1 + 22) / 3) * 0.9}')
     FOOT_CIRCUMFERENCE=$(printf "%.1f" "$size" | awk '{printf "%.1f", 8.0 + ($1 * 0.08)}')
 }
 
@@ -184,8 +197,11 @@ get_gauge() {
 
     printf "How do you want to enter gauge?\n"
     printf "1) Stitches/rows per inch (standard)\n"
-    printf "2) Stitches/rows per custom width\n"
-    printf "Choice (1-2): "
+    printf "2) Stitches/rows per 4 inches (common for swatches)\n"
+    printf "3) Stitches/rows over customer number of inches\n"
+    printf "4) Stitches/rows per 10 cm (metric swatch)\n"
+    printf "5) Stitches/rows over custom number of cm\n"
+    printf "Choice (1-5): "
     read -r gauge_method
 
     case "$gauge_method" in
@@ -198,6 +214,14 @@ get_gauge() {
             GAUGE_HEIGHT=1
             ;;
         2)
+            printf "\nStitches per 4 inches: "
+            read -r GAUGE_SPI
+            GAUGE_WIDTH=4
+            printf "Rows per 4 inches: "
+            read -r GAUGE_RPI
+            GAUGE_HEIGHT=4
+            ;;
+        3)
             printf "\nHow many stitches over your measurement? "
             read -r GAUGE_SPI
             printf "How many inches was your measurement? "
@@ -206,6 +230,26 @@ get_gauge() {
             read -r GAUGE_RPI
             printf "How many inches was your measurement? "
             read -r GAUGE_HEIGHT
+            ;;
+        4) 
+            printf "\nStitches per 10 cm: "
+            read -r GAUGE_SPI
+            GAUGE_WIDTH=3.93701 # 10 cm in inches
+            printf "Rows per 10 cm: "
+            read -r GAUGE_RPI
+            GAUGE_HEIGHT=3.93701
+            ;;
+        5)
+            printf "\nHow many stitches over your measurement? "
+            read -r GAUGE_SPI
+            printf "How many cm was your measurement? "
+            read -r GAUGE_WIDTH_CM
+            GAUGE_WIDTH=$(cm_to_inches "$GAUGE_WIDTH_CM")
+            printf "How many rows over how your measurement? "
+            read -r GAUGE_RPI
+            printf "How many cm was your measurement? "
+            read -r GAUGE_HEIGHT_CM
+            GAUGE_HEIGHT=$(cm_to_inches "$GAUGE_HEIGHT_CM")
             ;;
         *)
             printf "Invalid choice. Using 7 SPI, 10 RPI.\n"
@@ -233,7 +277,7 @@ get_leg_pattern() {
             ;;
         2)
             LEG_PATTERN="ribbing"
-            printf "\nRibbing pattern:\n"
+            printf "\nLeg ribbing pattern:\n"
             printf "1) 1x1 Ribs (K1, P1)\n"
             printf "2) 2x2 Ribs (K2, P2)\n"
             printf "Choice (1-2): "
@@ -260,13 +304,38 @@ get_leg_pattern() {
     esac
 }
 
+get_cuff_pattern() {
+    print_section "Cuff Pattern Choice"
+
+    printf "Choose cuff ribbing pattern:\n"
+    printf "1) 1x1 Ribs (K1, P1)\n"
+    printf "2) 2x2 Ribs (K2, P2)\n"
+    printf "Choice (1-2): "
+    read -r cuff_rib_choice
+
+    case "$cuff_rib_choice" in
+        1)
+            CUFF_PATTERN="1x1 ribbing"
+            CUFF_PATTERN_NOTES="K1, P1 throughout"
+            ;;
+        2)
+            CUFF_PATTERN="2x2 ribbing"
+            CUFF_PATTERN_NOTES="K2, P2 throughout"
+            ;;
+        *)
+            CUFF_PATTERN="1x1 ribbing"
+            CUFF_PATTERN_NOTES="K1, P1 throughout"
+            ;;
+    esac
+}
+
 get_toe_type() {
     print_section "Toe Type Selection"
 
     if [ "$CONSTRUCTION_METHOD" = "toe-up" ]; then
         printf "Choose toe construction (Toe-Up):\n"
         printf "1) Short Row Toe (wrapped stitches)\n"
-        printf "2) Wedge Toe with Judy's Magic Cast On\n"
+        printf "2) Wedge Toe (increases on sides)\n"
         printf "Choice (1-2): "
         read -r toe_choice
 
@@ -327,8 +396,7 @@ get_heel_type() {
         printf "Choose heel construction (Cuff-Down):\n"
         printf "1) Short Row Heel (wrapped stitches)\n"
         printf "2) Afterthought Heel (knit foot first, pick up after)\n"
-        printf "3) Heel Flap & Gusset (traditional structure)\n"
-        printf "Choice (1-3): "
+        printf "Choice (1-2): "
         read -r heel_choice
 
         case "$heel_choice" in
@@ -337,9 +405,6 @@ get_heel_type() {
                 ;;
             2)
                 HEEL_TYPE="afterthought"
-                ;;
-            3)
-                HEEL_TYPE="heel flap and gusset"
                 ;;
             *)
                 HEEL_TYPE="short row"
@@ -378,7 +443,7 @@ get_yarn_info() {
     printf "Yarn brand (leave blank to skip): "
     read -r YARN_BRAND
 
-    printf "Yarn weight (e.g., Fingering, Sport, DK) (leave blank to skip): "
+    printf "Yarn line and/or yarn weight (leave blank to skip): "
     read -r YARN_WEIGHT
 
     printf "Yarn color and/or dye lot (leave blank to skip): "
@@ -489,6 +554,9 @@ display_summary() {
     printf "  Measurement units: %s\n" "$MEASUREMENT_UNITS"
 
     printf "\n%bFOOT MEASUREMENTS:%b\n" "$BOLD" "$RESET"
+    if [ -n "$SHOE_SIZE" ]; then
+        printf "  Shoe Size: US %s (%s)\n" "$SHOE_SIZE" "$SHOE_SIZE_TYPE"
+    fi
     if [ "$MEASUREMENT_UNITS" = "metric" ]; then
         printf "  Foot length: %.1f cm\n" "$(inches_to_cm "$FOOT_LENGTH")"
         printf "  Foot circumference: %.1f cm\n" "$(inches_to_cm "$FOOT_CIRCUMFERENCE")"
@@ -503,6 +571,7 @@ display_summary() {
 
     printf "\n%bPATTERN DETAILS:%b\n" "$BOLD" "$RESET"
     printf "  Leg pattern: %s\n" "$LEG_PATTERN"
+    printf "  Cuff pattern: %s\n" "$CUFF_PATTERN"
     printf "  Toe type: %s\n" "$TOE_TYPE"
     printf "  Heel type: %s\n" "$HEEL_TYPE"
 
@@ -564,13 +633,14 @@ edit_selection() {
     printf "3) Foot size\n"
     printf "4) Gauge\n"
     printf "5) Leg pattern\n"
-    printf "6) Toe type\n"
-    printf "7) Heel type\n"
-    printf "8) Lengths (leg and cuff)\n"
-    printf "9) Yarn information\n"
-    printf "10) Needle information\n"
-    printf "11) Return to summary\n"
-    printf "\nChoice (1-11): "
+    printf "6) Cuff pattern\n"
+    printf "7) Toe type\n"
+    printf "8) Heel type\n"
+    printf "9) Lengths (leg and cuff)\n"
+    printf "10) Yarn information\n"
+    printf "11) Needle information\n"
+    printf "12) Return to summary\n"
+    printf "\nChoice (1-12): "
     read -r edit_choice
 
     case "$edit_choice" in
@@ -598,23 +668,26 @@ edit_selection() {
             get_leg_pattern
             ;;
         6)
-            get_toe_type
+            get_cuff_pattern
             ;;
         7)
-            get_heel_type
+            get_toe_type
             ;;
         8)
+            get_heel_type
+            ;;
+        9)
             get_lengths
             calculate_leg_rounds
             calculate_cuff_rounds
             ;;
-        9)
+        10)
             get_yarn_info
             ;;
-        10)
+        11)
             get_needle_info
             ;;
-        11)
+        12)
             return 1
             ;;
         *)
@@ -688,16 +761,6 @@ Cuff Length: $cuff_len $unit_display
 
 Gauge: $actual_spi stitches and $actual_rpi rows per inch
 
-STITCH COUNTS
-==============
-Cast on: $CAST_ON stitches
-Divide evenly onto needle method of choice.
-
-Cuff rounds: $CUFF_ROUNDS
-Leg rounds: $LEG_ROUNDS
-Heel stitches: $HEEL_STITCHES
-Toe starting stitches: $TOE_ROUNDS
-
 PATTERN CONSTRUCTION
 ====================
 
@@ -705,6 +768,12 @@ PATTERN CONSTRUCTION
 
     # Different structure for toe-up vs cuff-down
     if [ "$CONSTRUCTION_METHOD" = "toe-up" ]; then
+        # Create DPN note if user selected DPNs
+        local DPN_NOTE=""
+        if [ "$NEEDLE_METHOD" = "DPNs (Double-Pointed Needles)" ]; then
+            DPN_NOTE="
+Note: It is recommended to use only these two needles for the toe section to maintain the wedge shape and avoid splitting stitches across more needles. You can introduce another needle during the foot section, placing markers to keep the stitches organized as sole and instep."
+        fi
         # TOE-UP STRUCTURE: TOE → FOOT → HEEL → LEG → CUFF → (optional HEEL if afterthought)
         case "$TOE_TYPE" in
             "short row")
@@ -735,33 +804,65 @@ Toe Shaping:
             "wedge")
                 PATTERN_TEXT="${PATTERN_TEXT}TOE SECTION (WEDGE TOE WITH JUDY'S MAGIC CAST ON) - START HERE
 --------
-Setup with Judy's Magic Cast On:
-- Use Judy's Magic method or your preferred provisional cast-on
-- Cast on $TOE_ROUNDS stitches total (approximately 1/3 of your finished stitch count)
+Setup Wedge Toe:
+- Use Judy's Magic method or your preferred closed-toe cast-on (Turkish Cast-On, Figure-Eight Cast-On, etc)
+- Cast on $TOE_ROUNDS stitches total
   - $TOE_PER_NEEDLE stitches on top needle
   - $TOE_PER_NEEDLE stitches on bottom needle
 - This creates two parallel rows of stitches ready to join
 
 Initial Rounds:
-- Pick up $TOE_PER_NEEDLE stitches from the bottom strand
-- Now you have $CAST_ON stitches total (half from above, half from below)
-- Join in the round carefully
+- Knit $TOE_PER_NEEDLE stitches on each needle, joining in the round for $((TOE_PER_NEEDLE * 2)) stitches total
+$DPN_NOTE
 
 Wedge Toe Increases:
 - Round 1: Knit all stitches
-- Round 2: K1, M1, knit to last 2 stitches, M1, K1 (on each side)
+- Round 2: K1, M1R, knit to last stitch on the needle, M1L, K1, repeat on second needle to complete the round
 - Repeat rounds 1-2, working increases every other round
-- Continue until you have $CAST_ON stitches total
+- Continue until you have $CAST_ON stitches total (approximately $(( (CAST_ON - TOE_ROUNDS + 3) / 4 * 2 )) rounds of increases)
 
 "
                 ;;
         esac
 
         # FOOT SECTION (for toe-up socks, after toe shaping)
+        # Calculate foot rounds accounting for toe and heel based on construction methods
+        local foot_total_rounds=$(printf "%.0f" "$FOOT_LENGTH" | awk -v rpi="$GAUGE_RPI" -v gh="$GAUGE_HEIGHT" '{printf "%.0f", ($1 * rpi) / gh}')
+        local toe_rounds_used
+        local heel_rounds_used
+
+        # Calculate toe rounds based on toe type
+        case "$TOE_TYPE" in
+            "wedge")
+                # Wedge toe increases from TOE_ROUNDS to CAST_ON
+                # 4 increases per round, every other round: (change in stitches) / 2
+                toe_rounds_used=$(printf "%.0f" | awk -v co="$CAST_ON" -v tr="$TOE_ROUNDS" '{printf "%.0f", (co - tr) / 2}' <<< "")
+                ;;
+            "short row")
+                # Short row toe: wraps down from TOE_ROUNDS to HEEL_WRAP_STITCHES, then increases
+                # Wrap phase rows + increase rounds
+                toe_rounds_used=$(printf "%.0f" | awk -v tr="$TOE_ROUNDS" -v hw="$HEEL_WRAP_STITCHES" -v co="$CAST_ON" '{printf "%.0f", (tr - hw) + (co - tr) / 2}' <<< "")
+                ;;
+        esac
+
+        # Calculate heel rounds based on heel type
+        case "$HEEL_TYPE" in
+            "afterthought")
+                # Afterthought heel (wedge reverse): decreases from HEEL_STITCHES to HEEL_WRAP_STITCHES
+                # 4 decreases per round, every other round: (change in stitches) / 2
+                heel_rounds_used=$(printf "%.0f" | awk -v hs="$HEEL_STITCHES" -v hw="$HEEL_WRAP_STITCHES" '{printf "%.0f", (hs - hw) / 2}' <<< "")
+                ;;
+            "short row")
+                # Short row heel: flap (HEEL_STITCHES * 2/3 rows) + wrapping phase
+                heel_rounds_used=$(printf "%.0f" | awk -v hs="$HEEL_STITCHES" -v hw="$HEEL_WRAP_STITCHES" '{printf "%.0f", hs * 2 / 3 + (hs - hw) / 2}' <<< "")
+                ;;
+        esac
+
+        local foot_only_rounds=$((foot_total_rounds - toe_rounds_used - heel_rounds_used))
         PATTERN_TEXT="${PATTERN_TEXT}FOOT SECTION
 --------
-- Continue in stockinette stitch for approximately $foot_len $unit_display
-- Foot should measure from toe approximately $foot_len $unit_display
+- Continue in stockinette stitch for approximately $foot_only_rounds rounds
+- Foot (including toe and heel) should measure a total of $foot_len $unit_display from the beginning
 
 "
 
@@ -775,24 +876,16 @@ Heel is worked back and forth on $HEEL_STITCHES stitches (half of cast-on).
 Setup:
 - Knit $((CAST_ON / 2)) stitches, turn (leaving remaining stitches on hold for leg)
 
-Heel Flap:
-- Work back and forth on $HEEL_STITCHES stitches using slip stitch selvedge
-- Row 1 (RS): Sl1, knit to end
-- Row 2 (WS): Sl1, purl to end
-- Repeat rows 1-2 for approximately $((HEEL_STITCHES * 2 / 3)) rows
-- Heel flap should be roughly square
-
 Short Row Turning:
 - Work $((HEEL_STITCHES - 1)) stitches, W&T (wrap and turn)
 - Work to 1 stitch before the gap, W&T
+- Continue wrapping and turning, working toward center
 - Continue until $HEEL_WRAP_STITCHES stitches remain unwrapped (approximately 1/3 of heel stitches: $HEEL_WRAP_STITCHES total, $HEEL_PER_NEEDLE per needle)
-- Pick up wraps and work them together with their stitches
 
-Reshaping:
-- Pick up stitches along the side of the heel flap
-- Continue around to the leg stitches on hold
-- Pick up stitches on the other side of heel flap
-- You should now have $CAST_ON stitches ready for leg
+Picking Up Wraps:
+- Beginning at one end, pick up wraps and knit them together with their stitches
+- Work back across all stitches, continuing to pick up wraps as you go
+- You should now have $HEEL_STITCHES stitches again, ready to rejoin the leg
 
 "
                 ;;
@@ -804,7 +897,7 @@ Setting up for afterthought heel - you'll knit the heel after finishing the cuff
 Heel Marker:
 - Knit across $((CAST_ON / 2)) stitches (half the total)
 - Replace these $HEEL_STITCHES stitches with waste yarn
-  (Knit 2 rows with waste yarn over these stitches, return yarn to main ball)
+  (Knit 2 rows flat with waste yarn over these stitches)
 - Continue knitting the remaining $((CAST_ON / 2)) stitches with main yarn
 
 The waste yarn marker now holds your future heel stitches.
@@ -828,10 +921,10 @@ Instructions:
         # CUFF SECTION (for toe-up socks)
         PATTERN_TEXT="${PATTERN_TEXT}CUFF SECTION ($cuff_len $unit_display / $CUFF_ROUNDS rounds)
 -------
-Ribbing pattern: $LEG_PATTERN_NOTES
+Ribbing pattern: $CUFF_PATTERN_NOTES
 
 Instructions:
-- Work $CUFF_ROUNDS rounds of $LEG_PATTERN
+- Work $CUFF_ROUNDS rounds of $CUFF_PATTERN
 - Bind off loosely in pattern
 
 "
@@ -848,18 +941,15 @@ Setup for Heel:
 - Pick up $HEEL_STITCHES stitches from above the waste yarn
 - You now have $HEEL_STITCHES stitches for your heel
 
-Heel Flap:
-- Work back and forth on these $HEEL_STITCHES stitches using slip stitch selvedge
-- Row 1 (RS): Sl1, knit to end
-- Row 2 (WS): Sl1, purl to end
-- Repeat rows 1-2 for approximately $((HEEL_STITCHES * 2 / 3)) rows
-- Heel flap should be roughly square
-
 Short Row Heel Turning:
 - Work $((HEEL_STITCHES - 1)) stitches, W&T (wrap and turn)
 - Work to 1 stitch before the gap, W&T
+- Continue wrapping and turning, working toward center
 - Continue until $HEEL_WRAP_STITCHES stitches remain unwrapped (approximately 1/3 of heel stitches: $HEEL_WRAP_STITCHES total, $HEEL_PER_NEEDLE per needle)
-- Pick up wraps with their stitches and knit together
+
+Picking Up Wraps:
+- Beginning at one end, pick up wraps and knit them together with their stitches
+- Work back across all stitches, continuing to pick up wraps as you go
 - Graft or bind off remaining stitches
 
 "
@@ -869,12 +959,12 @@ Short Row Heel Turning:
         # CUFF-DOWN STRUCTURE: CUFF → LEG → HEEL → FOOT → TOE → (optional HEEL if afterthought)
         PATTERN_TEXT="${PATTERN_TEXT}CUFF SECTION ($cuff_len $unit_display / $CUFF_ROUNDS rounds) - START HERE
 -------
-Ribbing pattern: $LEG_PATTERN_NOTES
+Ribbing pattern: $CUFF_PATTERN_NOTES
 
 Instructions:
 - Cast on $CAST_ON stitches loosely using long-tail cast-on
 - Join in the round, being careful not to twist
-- Work $CUFF_ROUNDS rounds of $LEG_PATTERN
+- Work $CUFF_ROUNDS rounds of $CUFF_PATTERN
 - Tip: Keep first few stitches loose to avoid tight cuff
 
 "
@@ -901,24 +991,16 @@ Heel is worked back and forth on $HEEL_STITCHES stitches (half of cast-on).
 Setup:
 - Knit $((CAST_ON / 2)) stitches, turn (leaving remaining stitches on hold for foot)
 
-Heel Flap:
-- Work back and forth on $HEEL_STITCHES stitches using slip stitch selvedge
-- Row 1 (RS): Sl1, knit to end
-- Row 2 (WS): Sl1, purl to end
-- Repeat rows 1-2 for approximately $((HEEL_STITCHES * 2 / 3)) rows
-- Heel flap should be roughly square
-
 Short Row Turning:
 - Work $((HEEL_STITCHES - 1)) stitches, W&T (wrap and turn)
 - Work to 1 stitch before the gap, W&T
+- Continue wrapping and turning, working toward center
 - Continue until $HEEL_WRAP_STITCHES stitches remain unwrapped (approximately 1/3 of heel stitches: $HEEL_WRAP_STITCHES total, $HEEL_PER_NEEDLE per needle)
-- Pick up wraps and work them together with their stitches
 
-Reshaping:
-- Pick up stitches along the side of the heel flap
-- Continue around to the foot stitches on hold
-- Pick up stitches on the other side of heel flap
-- You should now have $CAST_ON stitches ready for foot
+Picking Up Wraps:
+- Beginning at one end, pick up wraps and knit them together with their stitches
+- Work back across all stitches, continuing to pick up wraps as you go
+- You should now have $HEEL_STITCHES stitches again, ready to rejoin the foot
 
 "
                 ;;
@@ -937,49 +1019,43 @@ The waste yarn marker now holds your future heel stitches.
 
 "
                 ;;
-            "heel flap and gusset")
-                PATTERN_TEXT="${PATTERN_TEXT}HEEL SECTION (HEEL FLAP & GUSSET - TRADITIONAL METHOD)
---------
-This traditional heel creates a well-fitted heel with a gusset.
-
-Setup:
-- Work across $((CAST_ON / 2)) stitches for heel (slip remaining stitches to holder for foot)
-
-Heel Flap:
-- Work back and forth on $HEEL_STITCHES stitches
-- Row 1 (RS): Sl1, knit to end
-- Row 2 (WS): Sl1, purl to end
-- Repeat rows 1-2 for approximately $((HEEL_STITCHES * 2 / 3)) rows (aim for square)
-
-Heel Turn (Short Rows):
-- Work $((HEEL_STITCHES - 1)) stitches, W&T (wrap and turn)
-- Pull yarn to front, skip next stitch, slip it back, return yarn to back
-- Purl back to 1 stitch before gap, W&T
-- Continue working toward center, working wraps with stitches
-- Until you have worked all but a few stitches
-
-Picking Up the Gusset:
-- Pick up $((HEEL_STITCHES / 2 + 2)) stitches along one side of heel flap
-- Knit across heel stitches
-- Pick up $((HEEL_STITCHES / 2 + 2)) stitches along other side
-- You now have more than $CAST_ON stitches (will decrease back down)
-
-Gusset Decreases:
-- Round 1: Knit around
-- Round 2 (decrease round):
-  - Knit to last 3 stitches before center foot stitches, K2tog, K1
-  - Knit across foot stitches
-  - K1, ssk to decrease other gusset side
-- Continue decreasing every other round until back to $CAST_ON stitches
-
-"
-                ;;
         esac
 
         # FOOT SECTION (for cuff-down socks, after heel)
+        # Calculate foot rounds accounting for heel and toe
+        local foot_total_rounds_cd=$(printf "%.0f" "$FOOT_LENGTH" | awk -v rpi="$GAUGE_RPI" -v gh="$GAUGE_HEIGHT" '{printf "%.0f", ($1 * rpi) / gh}')
+        local toe_rounds_used_cd
+        local heel_rounds_used_cd
+
+        # Calculate toe rounds based on toe type
+        case "$TOE_TYPE" in
+            "wedge")
+                # Wedge toe decreases from CAST_ON to TOE_ROUNDS
+                # 4 decreases per round, every other round: (change in stitches) / 2
+                toe_rounds_used_cd=$(printf "%.0f" | awk -v co="$CAST_ON" -v tr="$TOE_ROUNDS" '{printf "%.0f", (co - tr) / 2}' <<< "")
+                ;;
+            "short row")
+                # Short row toe: wraps from CAST_ON down to TOE_ROUNDS, then unwraps
+                # Wrap-unwrap phase represents the stitches being affected
+                toe_rounds_used_cd=$(printf "%.0f" | awk -v co="$CAST_ON" -v tr="$TOE_ROUNDS" '{printf "%.0f", co - tr}' <<< "")
+                ;;
+        esac
+
+        # Calculate heel rounds based on heel type
+        case "$HEEL_TYPE" in
+            "short row")
+                heel_rounds_used_cd=$(printf "%.0f" | awk -v hs="$HEEL_STITCHES" -v hw="$HEEL_WRAP_STITCHES" '{printf "%.0f", hs * 2 / 3 + (hs - hw) / 2}' <<< "")
+                ;;
+            "afterthought")
+                heel_rounds_used_cd=$(printf "%.0f" | awk -v hs="$HEEL_STITCHES" -v hw="$HEEL_WRAP_STITCHES" '{printf "%.0f", (hs - hw) / 2}' <<< "")
+                ;;
+        esac
+
+        local foot_only_rounds_cd=$((foot_total_rounds_cd - toe_rounds_used_cd - heel_rounds_used_cd))
         PATTERN_TEXT="${PATTERN_TEXT}FOOT SECTION
 --------
-- Continue in stockinette stitch until sock measures approximately $foot_len $unit_display from back of heel
+- Continue in stockinette stitch for approximately $foot_only_rounds_cd rounds
+- Foot (including heel and toe) should measure a total of $foot_len $unit_display from back of heel
 
 "
 
@@ -1047,18 +1123,15 @@ Setup for Heel:
 - Pick up $HEEL_STITCHES stitches from above the waste yarn
 - You now have $HEEL_STITCHES stitches for your heel
 
-Heel Flap:
-- Work back and forth on these $HEEL_STITCHES stitches using slip stitch selvedge
-- Row 1 (RS): Sl1, knit to end
-- Row 2 (WS): Sl1, purl to end
-- Repeat rows 1-2 for approximately $((HEEL_STITCHES * 2 / 3)) rows
-- Heel flap should be roughly square
-
 Short Row Heel Turning:
 - Work $((HEEL_STITCHES - 1)) stitches, W&T (wrap and turn)
 - Work to 1 stitch before the gap, W&T
+- Continue wrapping and turning, working toward center
 - Continue until $HEEL_WRAP_STITCHES stitches remain unwrapped (approximately 1/3 of heel stitches: $HEEL_WRAP_STITCHES total, $HEEL_PER_NEEDLE per needle)
-- Pick up wraps with their stitches and knit together
+
+Picking Up Wraps:
+- Beginning at one end, pick up wraps and knit them together with their stitches
+- Work back across all stitches, continuing to pick up wraps as you go
 - Graft or bind off remaining stitches
 
 "
@@ -1082,21 +1155,66 @@ $construction_details
 
 display_pattern() {
     clear_screen
-    printf "%s\n" "$PATTERN_TEXT"
+    printf "%s\n" "$PATTERN_TEXT" | fold -w 80 -s
 }
 
 save_pattern() {
-    printf "\n\nEnter filename for pattern (without extension): "
-    read -r filename
+    while true; do
+        printf "\n\nWhere would you like to save the pattern?\n"
+        printf "1) Current directory ($(pwd))\n"
+        printf "2) Specify another directory\n"
+        printf "Choice (1-2): "
+        read -r save_location
 
-    if [ -z "$filename" ]; then
-        filename="sock_pattern"
-    fi
+        case "$save_location" in
+            1)
+                save_dir="$(pwd)"
+                ;;
+            2)
+                printf "Enter directory path: "
+                read -r save_dir
 
-    filename="${filename}.txt"
+                # Expand ~ to home directory if present
+                save_dir="${save_dir/#\~/$HOME}"
 
-    printf "%s\n" "$PATTERN_TEXT" > "$filename"
-    printf "\nPattern saved to: %s\n" "$filename"
+                # Check if directory exists
+                if [ ! -d "$save_dir" ]; then
+                    printf "Directory does not exist. Create it? (y/n): "
+                    read -r create_dir
+                    case "$create_dir" in
+                        [Yy]*)
+                            mkdir -p "$save_dir" || {
+                                printf "Failed to create directory: %s\n" "$save_dir"
+                                continue
+                            }
+                            ;;
+                        *)
+                            printf "Save cancelled.\n"
+                            return
+                            ;;
+                    esac
+                fi
+                ;;
+            *)
+                printf "Invalid choice. Using current directory.\n"
+                save_dir="$(pwd)"
+                ;;
+        esac
+
+        printf "\nEnter filename for pattern (without extension): "
+        read -r filename
+
+        if [ -z "$filename" ]; then
+            filename="sock_pattern"
+        fi
+
+        filename="${filename}.txt"
+        filepath="${save_dir}/${filename}"
+
+        printf "%s\n" "$PATTERN_TEXT" | fold -w 80 -s > "$filepath"
+        printf "\nPattern saved to: %s\n" "$filepath"
+        break
+    done
 }
 
 output_options() {
@@ -1107,8 +1225,9 @@ output_options() {
     printf "1) Display pattern on screen\n"
     printf "2) Save pattern to file\n"
     printf "3) Both display and save\n"
-    printf "4) Done (exit)\n"
-    printf "\nChoice (1-4): "
+    printf "4) Regenerate pattern with different options\n"
+    printf "5) Done (exit)\n"
+    printf "\nChoice (1-5): "
     read -r output_choice
 
     case "$output_choice" in
@@ -1126,8 +1245,19 @@ output_options() {
             save_pattern
             ;;
         4)
-            return 1
+            while edit_selection; do
+                calculate_cast_on
+                calculate_leg_rounds
+                calculate_cuff_rounds
+                calculate_toe_stitches
+                calculate_heel_stitches
+            done
+            generate_pattern
+            return 0
             ;;
+        5)
+            return 1
+            ;; 
         *)
             printf "Invalid choice.\n"
             pause_for_user
@@ -1154,6 +1284,7 @@ main() {
     get_foot_size
     get_gauge
     get_leg_pattern
+    get_cuff_pattern
     get_toe_type
     get_heel_type
     get_lengths
