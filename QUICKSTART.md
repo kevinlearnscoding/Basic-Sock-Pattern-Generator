@@ -4,7 +4,7 @@
 
 ---
 
-## ⚡ 5-Minute Setup
+## ⚡ Less-Than-A-Minute Setup
 
 ### Step 1️⃣: Make It Executable
 
@@ -21,10 +21,24 @@ sh -n sock_pattern_generator.sh
 If you see no errors, you're good to go! ✅
 
 ---
+## 🚀 Your First Pattern in 3 Steps
+
+### Step 1: Start the script (details below if you are unfamiliar)
+```bash
+./sock_pattern_generator.sh
+```
+
+### Step 2: Answer the prompts
+(Takes ~2-3 minutes, just follow along!)
+
+### Step 3: Review & save
+Preview your pattern, make any edits, then save it
+
+**Done!** 🎉 You now have a custom knitting pattern ready to go
+---
+
 
 ## 🎯 Running the Script
-
-### 🎨 Interactive Mode (Recommended) ⭐
 
 ```bash
 ./sock_pattern_generator.sh
@@ -32,15 +46,8 @@ If you see no errors, you're good to go! ✅
 
 You'll be guided through a friendly, step-by-step process with clear prompts and automatic screen clearing between sections. Total time: ~2-3 minutes to generate a complete pattern!
 
-### 🧪 Test Drive Mode
 
-Want to see it in action without filling out forms?
-
-```bash
-./test_pattern_generator.sh
-```
-
-This runs automated tests showing calculations for different sock sizes and yarn weights. Great for understanding how it works!
+This invokes the friendly, step-by-step process. Total time: ~2-3 minutes to generate a complete pattern!
 
 ---
 
@@ -51,7 +58,7 @@ This runs automated tests showing calculations for different sock sizes and yarn
 | 🖥️ **System** | Any Unix-like system (Linux, macOS, WSL) |
 | 🐚 **Shell** | POSIX-compliant (`sh`, `bash`, `zsh`, etc.) |
 | 🛠️ **Tools** | `awk`, `clear`, `printf` (usually pre-installed) |
-| 📦 **Dependencies** | **None!** No `bc`, no npm, no pip needed 🎉 |
+| 📦 **Dependencies** | **None!** |
 
 ---
 
@@ -64,16 +71,16 @@ Here's what happens when you run the script:
    Choose shoe size or enter custom dimensions
 
 2. 📊 Gauge Swatch
-   Enter stitches/rows per inch
+   Enter stitches/rows per inch, stitches/rows per given number of centimeters, or enter customer measurments
 
 3. 🎨 Pattern Choices
-   Pick leg style, toe type, heel construction
+   Pick leg style, cuff ribbing, toe type, heel construction
 
 4. 📏 Measurements
    Leg length, cuff length
 
-5. 🧶 Yarn Details
-   Brand, weight, color, yardage
+5. 🧶 Yarn Details (Optional)
+   Brand, line/weight, color (all fields can be left blank)
 
 6. 🪡 Needles
    Size and working method (DPNs, Magic Loop, Circulars)
@@ -98,7 +105,6 @@ Here's what happens when you run the script:
 | File | Purpose |
 |------|---------|
 | **sock_pattern_generator.sh** | 🎯 Main script - Run this to generate patterns |
-| **test_pattern_generator.sh** | 🧪 Test suite - See it in action |
 | **README.md** | 📖 Full documentation & features |
 | **API_REFERENCE.md** | 📚 For developers & technical details |
 | **BACKEND_INTEGRATION.md** | 🌐 Web backend conversion guide |
@@ -106,46 +112,10 @@ Here's what happens when you run the script:
 
 ---
 
-## 📖 Real-World Examples
-
-### 👩 Adult Women's Pattern
-```
-Shoe Size: US Women's 8
-Gauge: 7 stitches/inch (Fingering weight)
-Pattern: Stockinette leg, 1x1 ribbed cuff
-Toe: Wedge | Heel: Short row
-Result: ➜ 56 stitch cast-on, ~75 yards needed
-```
-
-✨ Perfect for most fingering-weight yarns!
-
-### 👨 Adult Men's Pattern
-```
-Shoe Size: US Men's 10
-Gauge: 5 stitches/inch (DK weight)
-Pattern: 2x2 ribbed leg (more stretch!)
-Toe: Short row | Heel: Afterthought
-Result: ➜ ~44 stitches, ~100 yards needed
-```
-
-✨ Great for DK/sport weight comfort socks!
-
-### 👧 Child's Pattern
-```
-Custom: 7.5" length, 6.5" circumference
-Gauge: 8 stitches/inch over 2 inches
-Pattern: 1x1 ribbing (snug and fun!)
-Result: ➜ ~26 stitches, ~50 yards needed
-```
-
-✨ Perfect for using up yarn scraps!
-
----
-
 ## 💡 Pro Tips for Success
 
 ### 📏 **Gauge is Everything**
-✓ **Always** make a 4"×4" swatch in your actual yarn
+✓ **Always** make a in-the-round swatch in your actual yarn
 ✓ Measure in the center (edges are unreliable)
 ✓ Different yarns = different gauges (even same weight!)
 ✓ Spend 5 minutes here to save hours of frustration later
@@ -181,11 +151,11 @@ Check if awk is available:
 ```bash
 which awk
 ```
-Install if needed: `sudo apt install gawk` (Linux) or `brew install gawk` (macOS)
+Install if needed: available from most package managers as "gawk"
 
 ### ❌ Calculations seem way off
 1. Double-check your gauge measurement
-2. Use a proper 4"×4" swatch
+2. Double-check you've selected the correct measurment units (Imperial inches vs metric centimeters)
 3. Measure in the center, not edges
 4. Try knitting a fresh swatch if unsure
 
@@ -196,35 +166,6 @@ ls -ld .
 ```
 
 ---
-
-## 🚀 Your First Pattern in 3 Steps
-
-### Step 1: Start the script
-```bash
-./sock_pattern_generator.sh
-```
-
-### Step 2: Answer the prompts
-(Takes ~2-3 minutes, just follow along!)
-
-### Step 3: Review & save
-Preview your pattern, make any edits, then save it
-
-**Done!** 🎉 You now have a custom knitting pattern ready to go
-
----
-
-## 📚 What's Next?
-
-### 🎯 Ready to knit?
-- Print or view your pattern file
-- Cast on those stitches!
-- Enjoy hand-knit custom socks 🧦
-
-### 👥 Want to share?
-- Email patterns to knitting friends
-- Post on social media
-- Create a collection for your circle
 
 ### 🔍 Need more details?
 - 📖 **Full docs** → See [README.md](README.md)
@@ -237,24 +178,6 @@ See BACKEND_INTEGRATION.md for guidance on:
 - Creating lace pattern options
 - Building a web interface
 - Contributing enhancements
-
----
-
-## 🎓 Learning Resources
-
-### About Sock Construction
-- **Short Row Heel**: Creates a heel using wrap-and-turn stitches
-- **Afterthought Heel**: Knit the foot first, come back to pick up heel stitches later
-- **Wedge Toe**: Use strategic decreases to create a tapered toe
-- **Short Row Toe**: Similar to heel, creates a rounded point
-
-All techniques are fully explained in your generated pattern! ✨
-
-### About Gauge
-- **SPI** (Stitches Per Inch): Count stitches in 1 inch of your swatch
-- **RPI** (Rows Per Inch): Count rows in 1 inch of your swatch
-- **Why it matters**: Gauge determines how many stitches you need to cast on
-- **Rule**: More stitches per inch = smaller socks, fewer stitches = larger socks
 
 ---
 

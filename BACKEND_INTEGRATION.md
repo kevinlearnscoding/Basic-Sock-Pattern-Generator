@@ -37,7 +37,49 @@ class SockCalculator {
     return Math.round((length * gaugeRpi) / gaugeHeight);
   }
 
-  // ... more calculation functions
+  static calculateCuffRounds(length, gaugeRpi, gaugeHeight = 1) {
+    return Math.round((length * gaugeRpi) / gaugeHeight);
+  }
+
+  static calculateToeStitches(castOn) {
+    let toeRounds = Math.round(castOn / 3);
+    if (toeRounds % 2 !== 0) toeRounds--;
+    return {
+      toeRounds: toeRounds,
+      toePerNeedle: toeRounds / 2
+    };
+  }
+
+  static calculateHeelStitches(castOn) {
+    let heelStitches = Math.round(castOn / 2);
+    let heelWrapStitches = Math.round(heelStitches / 3);
+    if (heelWrapStitches % 2 !== 0) heelWrapStitches--;
+    return {
+      heelStitches: heelStitches,
+      heelWrapStitches: heelWrapStitches,
+      heelPerNeedle: heelWrapStitches / 2
+    };
+  }
+
+  static cmToInches(cm) {
+    return (cm / 2.54).toFixed(1);
+  }
+
+  static inchesToCm(inches) {
+    return (inches * 2.54).toFixed(1);
+  }
+
+  static womensSizeToDimensions(size) {
+    const length = ((size + 21) / 3) * 0.9;
+    const circumference = 7.5 + (size * 0.08);
+    return { length: length.toFixed(1), circumference: circumference.toFixed(1) };
+  }
+
+  static mensSizeToDimensions(size) {
+    const length = ((size + 22) / 3) * 0.9;
+    const circumference = 8.0 + (size * 0.08);
+    return { length: length.toFixed(1), circumference: circumference.toFixed(1) };
+  }
 }
 
 module.exports = SockCalculator;
@@ -76,40 +118,86 @@ class PatternGenerator {
   constructor(config) {
     this.config = config;
     this.validate();
+    this.calculateAll();
   }
 
   validate() {
+    SockValidator.validateConstructionMethod(this.config.construction_method);
+    SockValidator.validateMeasurementUnits(this.config.measurement_units);
     SockValidator.validateFootSize(this.config.foot);
     SockValidator.validateGauge(this.config.gauge);
     // ... validate all sections
   }
 
+  calculateAll() {
+    this.calculations = {
+      castOn: SockCalculator.calculateCastOn(
+        this.config.foot.circumference_inches,
+        this.config.gauge.stitches_per_inch,
+        this.config.gauge.gauge_width
+      ),
+      legRounds: SockCalculator.calculateLegRounds(
+        this.config.lengths.leg_inches,
+        this.config.gauge.rows_per_inch,
+        this.config.gauge.gauge_height
+      ),
+      cuffRounds: SockCalculator.calculateCuffRounds(
+        this.config.lengths.cuff_inches,
+        this.config.gauge.rows_per_inch,
+        this.config.gauge.gauge_height
+      ),
+      ...SockCalculator.calculateToeStitches(this.castOn),
+      ...SockCalculator.calculateHeelStitches(this.castOn)
+    };
+  }
+
   generate() {
-    const calculations = this.calculateAll();
-    const pattern = this.renderTemplate(calculations);
+    const pattern = this.renderTemplate();
     return {
       pattern,
-      calculations,
+      calculations: this.calculations,
       config: this.config
     };
   }
 
-  calculateAll() {
-    return {
-      castOn: SockCalculator.calculateCastOn(...),
-      legRounds: SockCalculator.calculateLegRounds(...),
-      // ... all calculations
-    };
+  renderTemplate() {
+    // Render sections in order based on construction method
+    if (this.config.construction_method === 'toe-up') {
+      return this.renderToeUp();
+    } else {
+      return this.renderCuffDown();
+    }
   }
 
-  renderTemplate(calculations) {
-    // Load templates and substitute variables
-    let pattern = TEMPLATES.header;
-    pattern += this.renderCuff(calculations);
-    pattern += this.renderLeg(calculations);
-    // ... render all sections
+  renderToeUp() {
+    // Structure: TOE → FOOT → HEEL → LEG → CUFF → (optional AFTERTHOUGHT HEEL)
+    let pattern = this.templates.header;
+    pattern += this.renderToeSection();
+    pattern += this.renderFootSection();
+    pattern += this.renderHeelSetup();
+    pattern += this.renderLegSection();
+    pattern += this.renderCuffSection();
+    if (this.config.pattern.heel === 'afterthought') {
+      pattern += this.renderAftertoughtHeelInstructions();
+    }
     return pattern;
   }
+
+  renderCuffDown() {
+    // Structure: CUFF → LEG → HEEL → FOOT → TOE → (optional AFTERTHOUGHT HEEL)
+    let pattern = this.templates.header;
+    pattern += this.renderCuffSection();
+    pattern += this.renderLegSection();
+    pattern += this.renderHeelSetup();
+    pattern += this.renderFootSection();
+    pattern += this.renderToeSection();
+    if (this.config.pattern.heel === 'afterthought') {
+      pattern += this.renderAftertoughtHeelInstructions();
+    }
+    return pattern;
+  }
+
+  // ... render individual sections based on templates
 }
 ```
 
@@ -142,21 +230,35 @@ app.post('/api/v1/socks/generate', (req, res) => {
 // Quick calculations only
 app.post('/api/v1/socks/calculate', (req, res) => {
   try {
-    const { circumference, gaugeData, lengths } = req.body;
-    const calculations = {
-      castOn: SockCalculator.calculateCastOn(
-        circumference,
-        gaugeData.spi,
-        gaugeData.width
-      ),
-      legRounds: SockCalculator.calculateLegRounds(
-        lengths.leg,
-        gaugeData.rpi,
-        gaugeData.height
-      ),
-      // ... more calculations
-    };
-    res.json({ success: true, data: calculations });
+    const { foot, gauge, lengths } = req.body;
+    const castOn = SockCalculator.calculateCastOn(
+      foot.circumference_inches,
+      gauge.stitches_per_inch,
+      gauge.gauge_width
+    );
+    const legRounds = SockCalculator.calculateLegRounds(
+      lengths.leg_inches,
+      gauge.rows_per_inch,
+      gauge.gauge_height
+    );
+    const cuffRounds = SockCalculator.calculateCuffRounds(
+      lengths.cuff_inches,
+      gauge.rows_per_inch,
+      gauge.gauge_height
+    );
+    const toe = SockCalculator.calculateToeStitches(castOn);
+    const heel = SockCalculator.calculateHeelStitches(castOn);
+
+    res.json({
+      success: true,
+      data: {
+        castOn,
+        legRounds,
+        cuffRounds,
+        ...toe,
+        ...heel
+      }
+    });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
   }

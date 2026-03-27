@@ -8,7 +8,11 @@ All user input is stored as shell variables. For web integration, these would be
 
 ```json
 {
+  "construction_method": "toe-up",  // or "cuff-down"
+  "measurement_units": "imperial",  // or "metric"
   "foot": {
+    "shoe_size": 8,
+    "shoe_size_type": "Women's",
     "length_inches": 9.5,
     "circumference_inches": 8.0
   },
@@ -19,26 +23,28 @@ All user input is stored as shell variables. For web integration, these would be
     "gauge_height": 1
   },
   "pattern": {
-    "leg": "stockinette",  // or "1x1 ribbing", "2x2 ribbing"
-    "toe": "short row",     // or "wedge"
-    "heel": "short row"     // or "afterthought"
+    "leg": "stockinette",      // or "1x1 ribbing", "2x2 ribbing"
+    "cuff": "1x1 ribbing",     // or "2x2 ribbing"
+    "toe": "short row",         // or "wedge"
+    "heel": "short row"         // or "afterthought"
   },
   "lengths": {
     "leg_inches": 8,
     "cuff_inches": 2
   },
   "yarn": {
-    "brand": "Patons",
-    "weight": "Fingering",
-    "color_dye_lot": "Color 123",
-    "yardage_available": 400
+    "brand": "Patons",          // optional - can be empty
+    "weight": "Fingering",      // optional - can be empty
+    "color_dye_lot": "Color 123" // optional - can be empty
   },
   "needles": {
     "size": "US 1",
-    "method": "Magic Loop"  // or "DPNs", "Short Circulars"
+    "method": "Magic Loop"      // or "DPNs (Double-Pointed Needles)", "Short Circulars"
   }
 }
 ```
+
+**Note**: Yarn information is optional. Yardage calculations are no longer provided.
 
 ## Calculation Functions
 
@@ -90,12 +96,19 @@ cuffRounds(length, gaugeRpi, gaugeHeight) {
 
 **Input**: `CAST_ON`
 
-**Output**: `TOE_ROUNDS` (integer)
+**Output**: `TOE_ROUNDS`, `TOE_PER_NEEDLE` (integers)
 
 ```javascript
-// Number of decrease rounds for toe
-toeRounds(castOn) {
-  return Math.round(castOn / 4);
+// Toe stitches: approximately 1/3 of cast-on total
+// For proportional stitch distribution across 2 needles
+toeStitches(castOn) {
+  let toeRounds = Math.round(castOn / 3);
+  // Ensure even number
+  if (toeRounds % 2 !== 0) toeRounds--;
+  return {
+    toeRounds: toeRounds,
+    toePerNeedle: toeRounds / 2
+  };
 }
 ```
 
@@ -103,25 +116,21 @@ toeRounds(castOn) {
 
 **Input**: `CAST_ON`
 
-**Output**: `HEEL_STITCHES` (integer)
+**Output**: `HEEL_STITCHES`, `HEEL_WRAP_STITCHES`, `HEEL_PER_NEEDLE` (integers)
 
 ```javascript
+// Heel flap stitches are half of cast-on
+// Unwrapped/remaining stitches are approximately 1/3 of heel stitches
 heelStitches(castOn) {
-  return Math.round(castOn / 2);
-}
-```
-
-### `calculate_yardage_needed()`
-
-**Input**: `CAST_ON`, `LEG_ROUNDS`, `CUFF_ROUNDS`, `TOE_ROUNDS`
-
-**Output**: `ESTIMATED_YARDAGE` (integer)
-
-```javascript
-estimatedYardage(castOn, legRounds, cuffRounds, toeRounds) {
-  let totalRounds = castOn * (legRounds + cuffRounds + toeRounds);
-  // Rough estimate: ~600 stitches = 1 yard
-  return Math.round(totalRounds / 600);
+  let heelStitches = Math.round(castOn / 2);
+  let heelWrapStitches = Math.round(heelStitches / 3);
+  // Ensure even number
+  if (heelWrapStitches % 2 !== 0) heelWrapStitches--;
+  return {
+    heelStitches: heelStitches,
+    heelWrapStitches: heelWrapStitches,
+    heelPerNeedle: heelWrapStitches / 2
+  };
 }
 ```
 
@@ -129,13 +138,13 @@ estimatedYardage(castOn, legRounds, cuffRounds, toeRounds) {
 
 ### `compute_foot_length_from_womens_size()`
 
-**Input**: `size` (US Women's shoe size)
+**Input**: `size` (US Women's shoe size, 5-13)
 
 **Output**: `FOOT_LENGTH`, `FOOT_CIRCUMFERENCE` (inches, decimals)
 
 ```javascript
 womensSizeToDimensions(size) {
-  const length = 8.125 + (size * 0.3125);
+  const length = ((size + 21) / 3) * 0.9;  // Negative ease at 90%
   const circumference = 7.5 + (size * 0.08);
   return {
     length: length.toFixed(1),
@@ -146,13 +155,13 @@ womensSizeToDimensions(size) {
 
 ### `compute_foot_length_from_mens_size()`
 
-**Input**: `size` (US Men's shoe size)
+**Input**: `size` (US Men's shoe size, 5-16)
 
 **Output**: `FOOT_LENGTH`, `FOOT_CIRCUMFERENCE` (inches, decimals)
 
 ```javascript
 mensSizeToDimensions(size) {
-  const length = 8.375 + (size * 0.3125);
+  const length = ((size + 22) / 3) * 0.9;  // Negative ease at 90%
   const circumference = 8.0 + (size * 0.08);
   return {
     length: length.toFixed(1),
@@ -161,9 +170,63 @@ mensSizeToDimensions(size) {
 }
 ```
 
+## Utility Functions
+
+### `cm_to_inches()`
+
+**Input**: `centimeters` (number)
+
+**Output**: Inches (decimal, 1 decimal place)
+
+```javascript
+cmToInches(cm) {
+  return (cm / 2.54).toFixed(1);
+}
+```
+
+### `inches_to_cm()`
+
+**Input**: `inches` (number)
+
+**Output**: Centimeters (decimal, 1 decimal place)
+
+```javascript
+inchesToCm(inches) {
+  return (inches * 2.54).toFixed(1);
+}
+```
+
+These are used to convert between imperial and metric measurements for user display.
+
 ## Validation Functions
 
 For web integration, these functions should validate user input:
+
+### Construction Method Validation
+
+```javascript
+validateConstructionMethod(method) {
+  const valid = ['toe-up', 'cuff-down'];
+  return valid.includes(method);
+}
+```
+
+Valid methods determine which toe/heel options are available:
+- **Toe-Up**: Toe (short row or wedge), Heel (short row or afterthought)
+- **Cuff-Down**: Heel (short row or afterthought), Toe (short row or wedge)
+
+### Measurement Units Validation
+
+```javascript
+validateMeasurementUnits(units) {
+  const valid = ['imperial', 'metric'];
+  return valid.includes(units);
+}
+```
+
+Determines display units:
+- **Imperial**: inches, yards
+- **Metric**: centimeters, meters
 
 ### Foot Size Validation
 
@@ -212,14 +275,26 @@ validateGauge(input) {
 ```javascript
 validatePattern(input) {
   const validLegs = ['stockinette', '1x1 ribbing', '2x2 ribbing'];
+  const validCuffs = ['1x1 ribbing', '2x2 ribbing'];
   const validToes = ['short row', 'wedge'];
   const validHeels = ['short row', 'afterthought'];
 
+  const heelToeOptions = {
+    'toe-up': {
+      heels: ['short row', 'afterthought'],
+      toes: ['short row', 'wedge']
+    },
+    'cuff-down': {
+      heels: ['short row', 'afterthought'],
+      toes: ['short row', 'wedge']
+    }
+  };
+
   return validLegs.includes(input.leg) &&
+         validCuffs.includes(input.cuff) &&
          validToes.includes(input.toe) &&
          validHeels.includes(input.heel);
 }
-```
 
 ## Pattern Generation
 
@@ -263,12 +338,12 @@ For web backend implementation:
 
 ```
 POST /api/v1/socks/generate
-  Input: Full config JSON
-  Output: { pattern: string, config: object }
+  Input: Full config JSON with construction_method and measurement_units
+  Output: { pattern: string, calculations: object, config: object }
 
 POST /api/v1/socks/calculate
-  Input: measurements + gauge
-  Output: { castOn, legRounds, cuffRounds, heelStitches, ... }
+  Input: measurements + gauge + construction_method + measurement_units
+  Output: { castOn, legRounds, cuffRounds, heelStitches, heelWrapStitches, toeRounds, ... }
 
 GET /api/v1/socks/sizes/womens/:size
   Output: { length, circumference }
@@ -276,7 +351,7 @@ GET /api/v1/socks/sizes/womens/:size
 GET /api/v1/socks/sizes/mens/:size
   Output: { length, circumference }
 
-GET /api/v1/socks/validate
+GET /api/v1/socks/validate/:section
   Input: Section of config
   Output: { valid: boolean, errors: string[] }
 ```
