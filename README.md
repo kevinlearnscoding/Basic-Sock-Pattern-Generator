@@ -61,44 +61,6 @@ Follow the interactive prompts to enter your sock specifications. The script wil
 5. 📖 Generate a complete knitting pattern
 6. 💾 Save the pattern or display it on screen
 
----
-
-## 📚 Usage Guide
-
-### 📏 Input Prompts
-
-**🦶 Foot Size**
-- Choose between US Women's shoe size, US Men's shoe size, or enter custom dimensions
-- Script converts shoe size to foot length and circumference estimates
-
-**📊 Gauge Information**
-- Enter as stitches/rows per inch (standard) or per custom measurement width
-- 💡 **Tip**: This is critical for accuracy—use an actual swatch!
-
-**🎨 Pattern Choices**
-- Leg pattern: Stockinette (smooth) or Ribbing (1x1 or 2x2)
-- Toe: Short Row (wrap-and-turn) or Wedge (decrease-based)
-- Heel: Short Row (wrap-and-turn) or Afterthought (pick up later)
-
-**📏 Lengths**
-- Leg length: From cuff to heel (typically 6-10 inches)
-- Cuff length: Elastic band at top (typically 1-2 inches for ribbing)
-
-**🧶 Yarn Details**
-- Brand, weight (fingering, sport, DK, etc.), color/dye lot
-- Total yardage available
-
-**🪡 Needle Specifications**
-- Size (US or mm), working method (DPNs, Magic Loop, or Short Circulars)
-
-### ✅ Review Process
-
-After entering all information:
-1. Screen displays complete summary of all choices
-2. Confirm to proceed or make changes
-3. Can edit individual sections without re-entering everything
-4. Once confirmed, pattern is generated immediately
-
 ### 📤 Output Options
 
 - 🖥️ **Display**: View pattern in terminal
@@ -118,71 +80,6 @@ Generated patterns include everything you need:
   - **👠 Heel**: Detailed wrap-and-turn instructions (short row) or setup (afterthought)
   - **🦶 Foot**: From heel to toe opening
   - **🎯 Toe**: Complete decrease instructions with Kitchener stitch finishing
-- ✨ Finishing techniques (weaving in ends, blocking, care)
-- 📊 Estimated yardage requirements
-- 🧼 Care instructions for finished socks
-
----
-
-## 🔧 Technical Details
-
-### 🧮 Calculation Formulas
-
-```
-Cast-on stitches = (foot circumference × SPI) / gauge width
-Leg rounds = (leg length × RPI) / gauge height
-Cuff rounds = (cuff length × RPI) / gauge height
-```
-
-Where SPI = stitches per inch, RPI = rows per inch
-
-### 👟 Shoe Size Conversion
-
-- **👩 US Women's**: Foot length = 8.125 + (size × 0.3125) inches
-- **👨 US Men's**: Foot length = 8.375 + (size × 0.3125) inches
-
-### 🏗️ Script Architecture
-
-Organized into modular, maintainable sections:
-
-| Component | Purpose |
-|-----------|---------|
-| **Utility Functions** | Screen management, headers, pauses |
-| **Input Functions** | Gather user data (shoe size, gauge, preferences) |
-| **Calculation Functions** | Math & stitch count generation |
-| **Review Functions** | Summary display & edit flow |
-| **Generation Functions** | Pattern creation & output formatting |
-| **Main Flow** | Orchestrate entire user workflow |
-
----
-
-## 📖 Examples
-
-### 👩 Women's Size 8 with DK Yarn
-
-```
-Size: US Women's 8 (9.5" length, 8" circumference)
-Gauge: 5 SPI, 6.5 RPI (typical for DK weight)
-Pattern: Stockinette leg, 1x1 ribbed cuff
-Toe: Wedge | Heel: Short Row
-Needle: US 4 (3.5mm) Magic Loop
-Leg: 8 inches | Cuff: 2 inches
-```
-
-✨ Result: ~180-200 stitches cast-on, ~900-1000 yards needed
-
-### 👧 Child's Sock with Sport Yarn
-
-```
-Size: US Women's 5 (8" length, 6.5" circumference)
-Gauge: 7 SPI, 9 RPI (Fingering weight)
-Pattern: 2x2 ribbed leg, stockinette elsewhere
-Toe: Short Row | Heel: Afterthought
-Needle: US 2 (2.75mm) DPNs
-Leg: 6 inches | Cuff: 1.5 inches
-```
-
-✨ Result: ~45 stitches cast-on, ~400-500 yards needed
 
 ---
 
@@ -210,44 +107,6 @@ Verify POSIX compliance:
 sh -n sock_pattern_generator.sh  # Check syntax
 sh sock_pattern_generator.sh     # Run with sh
 ```
-
----
-
-## 📁 File Structure
-
-```bash
-Basic-Sock-Pattern-Generator/
-├── sock_pattern_generator.sh      # Main POSIX shell script 🎯
-├── test_pattern_generator.sh      # Automated test suite 🧪
-├── README.md                       # This file 📖
-├── QUICKSTART.md                   # Quick start guide 🚀
-├── API_REFERENCE.md                # Function documentation 📚
-├── BACKEND_INTEGRATION.md          # Web integration guide 🌐
-└── LICENSE                         # MIT License ⚖️
-```
-
----
-
-## 🎯 Limitations & Future Roadmap
-
-### 🚫 Current Limitations
-- Basic sock construction (no lace, colorwork, or complex stitches yet)
-- Single pair per pattern generation
-- Approximate yardage estimates
-- No calf shaping or advanced shaping options
-
-### 🚀 Planned Features
-
-🗓️ **Bulk Knitting Calculator** - Generate patterns for multiple pairs at once
-   - Family matching sets
-   - Gift sets in different sizes
-   - Batch yardage calculations
-
-📄 **PDF Pattern Export** - Create publication-ready PDFs
-   - Professional formatting
-   - Print-friendly layouts
-   - Embedded stitch diagrams
-
 ---
 
 ## 🤝 Contributing
@@ -262,7 +121,7 @@ Have ideas? Found a bug? We'd love your help!
 
 ## 📄 License
 
-[MIT License](LICENSE) - Use, modify, and distribute freely!
+[BSD-2 License](LICENSE) - Use, modify, and distribute freely!
 
 ---
 

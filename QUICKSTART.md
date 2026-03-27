@@ -125,11 +125,6 @@ Here's what happens when you run the script:
 ✓ Try on as you go
 ✓ Better to adjust early than unravel a whole sock!
 
-### 📝 **Keep Notes**
-✓ Save your favorite gauge for each yarn
-✓ Note what worked and what didn't
-✓ Build your own pattern library over time
-✓ Share with knitting buddies!
 
 ---
 
@@ -175,7 +170,6 @@ ls -ld .
 ### 🛠️ Want to customize?
 See BACKEND_INTEGRATION.md for guidance on:
 - Adding new heel/toe techniques
-- Creating lace pattern options
 - Building a web interface
 - Contributing enhancements
 
