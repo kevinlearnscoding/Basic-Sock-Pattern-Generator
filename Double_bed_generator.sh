@@ -697,8 +697,14 @@ generate_pattern() {
         unit_display="inches"
     fi
 
-    actual_spi=$(printf "%.1f" "$GAUGE_SPI" | awk -v gw="$GAUGE_WIDTH" '{printf "%.1f", $1 / gw}')
-    actual_rpi=$(printf "%.1f" "$GAUGE_RPI" | awk -v gh="$GAUGE_HEIGHT" '{printf "%.1f", $1 / gh}')
+    actual_spi=$(awk -v gs="$GAUGE_SPI" -v gw="$GAUGE_WIDTH" 'BEGIN {
+        if (gw == 0) gw = 1
+        printf "%.1f", gs / gw
+    }')
+    actual_rpi=$(awk -v gr="$GAUGE_RPI" -v gh="$GAUGE_HEIGHT" 'BEGIN {
+        if (gh == 0) gh = 1
+        printf "%.1f", gr / gh
+    }')
 
     short_row_section_stitches=$((CAST_ON / 2))
     short_row_center_stitches=$SHORT_ROW_CENTER_STITCHES
@@ -803,9 +809,21 @@ Foot Circumference: $foot_circ $unit_display
 Leg Length: $leg_len $unit_display
 Cuff Length: $cuff_len $unit_display
 Gauge: $actual_spi stitches and $actual_rpi rows per inch"
-    if [ "$MEASUREMENT_UNITS" = "metric" ]; then
-        PATTERN_TEXT="${PATTERN_TEXT}
-($GAUGE_SPI stitches per $GAUGE_WIDTH cm and $GAUGE_RPI rows per $GAUGE_HEIGHT cm)"
+    if [ $gauge_method = "2" ]; then
+    PATTERN_TEXT="${PATTERN_TEXT}
+($GAUGE_SPI stitches per 4 inches and $GAUGE_RPI rows per 4 inches)"
+    fi
+    if [ $gauge_method = "3" ]; then
+    PATTERN_TEXT="${PATTERN_TEXT}
+($GAUGE_SPI stitches per $GAUGE_WIDTH inches and $GAUGE_RPI rows per $GAUGE_HEIGHT inches)"
+    fi
+    if [ $gauge_method = "4" ]; then
+    PATTERN_TEXT="${PATTERN_TEXT}
+($GAUGE_SPI stitches per 10 cm and $GAUGE_RPI rows per 10 cm)"
+    fi
+    if [ $gauge_method = "5" ]; then
+    PATTERN_TEXT="${PATTERN_TEXT}
+($GAUGE_SPI stitches per $GAUGE_WIDTH_CM cm and $GAUGE_RPI rows per $GAUGE_HEIGHT_CM cm)"
     fi
     PATTERN_TEXT="${PATTERN_TEXT}
 
