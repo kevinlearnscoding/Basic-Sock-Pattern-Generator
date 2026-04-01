@@ -46,17 +46,13 @@ printf_wrapped() {
 }
 
 print_welcome() {
-    printf "%b" "============================================\n${HIGHLIGHT}WELCOME TO THE DOUBLE BED SOCK GENERATOR!${RESET}\n============================================\n\nThis tool generates machine-agnostic instructions for a standard-gauge double bed sock workflow using your measurements, gauge, and design choices.\n\n${BOLD}NOTE: Knit a gauge swatch on your machine before using this tool to ensure accurate stitch and row counts.${RESET}\n\nThis script is designed for domestic double bed machines and uses neutral terminology that maps across brands.\n\n${HIGHLIGHT}Let's get started!${RESET}\n" | fold -w 80 -s
+    printf "%b" "============================================\n${HIGHLIGHT}WELCOME TO THE DOUBLE BED SOCK GENERATOR!${RESET}\n============================================\n\nThis tool generates machine-agnostic instructions for domestic double bed sock knitting based on your measurements, gauge, and preferences.\n\n${BOLD}NOTE: Knit a gauge swatch on your machine before using this tool to ensure accurate stitch and row counts.${RESET}\n\n${HIGHLIGHT}Let's get started!${RESET}\n" | fold -w 80 -s
 }
 
 
 # ============================================================================
 # INPUT FUNCTIONS
 # ============================================================================
-
-set_construction_method() {
-    CONSTRUCTION_METHOD="toe-up"
-}
 
 get_measurement_units() {
     print_section "Measurement Units"
@@ -71,17 +67,14 @@ get_measurement_units() {
         1)
             MEASUREMENT_UNITS="imperial"
             UNIT_LENGTH="inches"
-            UNIT_DISTANCE="yards"
             ;;
         2)
             MEASUREMENT_UNITS="metric"
             UNIT_LENGTH="cm"
-            UNIT_DISTANCE="meters"
             ;;
         *)
             MEASUREMENT_UNITS="imperial"
             UNIT_LENGTH="inches"
-            UNIT_DISTANCE="yards"
             ;;
     esac
 }
@@ -180,7 +173,7 @@ get_gauge() {
     printf "How do you want to enter gauge?\n"
     printf "1) Stitches/rows per inch (standard)\n"
     printf "2) Stitches/rows per 4 inches (common for swatches)\n"
-    printf "3) Stitches/rows over customer number of inches\n"
+    printf "3) Stitches/rows over custom number of inches\n"
     printf "4) Stitches/rows per 10 cm (metric swatch)\n"
     printf "5) Stitches/rows over custom number of cm\n"
     printf "Choice (1-5): "
@@ -249,13 +242,13 @@ get_leg_pattern() {
     printf "Choose leg pattern:\n"
     printf "1) Stockinette\n"
     printf "2) Ribbing\n"
+    printf "NOTE: Ribbing patterns will be worked as a flat section with transfers to the main bed, not in the round, and will need to be Kitchener stitched to the foot and seamed up the leg after knitting.\n"
     printf "Choice (1-2): "
     read -r leg_choice
 
     case "$leg_choice" in
         1)
             LEG_PATTERN="stockinette"
-            LEG_PATTERN_NOTES="Knit all rounds in the round on double bed stockinette"
             LEG_RIBBING_SELECTED="no"
             ;;
         2)
@@ -268,17 +261,14 @@ get_leg_pattern() {
             case "$rib_choice" in
                 1)
                     LEG_PATTERN="1x1 ribbing"
-                    LEG_PATTERN_NOTES="Work 1x1 ribbing as a flat ribbing section"
                     LEG_RIBBING_SELECTED="yes"
                     ;;
                 2)
                     LEG_PATTERN="2x2 ribbing"
-                    LEG_PATTERN_NOTES="Work 2x2 ribbing as a flat ribbing section"
                     LEG_RIBBING_SELECTED="yes"
                     ;;
                 *)
                     LEG_PATTERN="1x1 ribbing"
-                    LEG_PATTERN_NOTES="Work 1x1 ribbing as a flat ribbing section"
                     LEG_RIBBING_SELECTED="yes"
                     ;;
             esac
@@ -286,7 +276,6 @@ get_leg_pattern() {
             ;;
         *)
             LEG_PATTERN="stockinette"
-            LEG_PATTERN_NOTES="Knit all rounds in the round on double bed stockinette"
             LEG_RIBBING_SELECTED="no"
             ;;
     esac
@@ -298,34 +287,29 @@ get_cuff_pattern() {
     print_section "Cuff Pattern Choice"
 
     if [ "$LEG_RIBBING_SELECTED" = "yes" ]; then
-        printf "Leg is ribbed. Choose cuff ribbing pattern:\n"
-        printf "1) 1x1 Ribs\n"
-        printf "2) 2x2 Ribs\n"
+        printf "Choose cuff ribbing pattern:\n"
+        printf "1) 1x1 ribbing\n"
+        printf "2) 2x2 ribbing\n"
         printf "Choice (1-2): "
         read -r cuff_rib_choice
 
         case "$cuff_rib_choice" in
             1)
                 CUFF_PATTERN="1x1 ribbing"
-                CUFF_PATTERN_NOTES="Work 1x1 ribbing as a flat ribbing section"
-                CUFF_RIBBING_SELECTED="yes"
                 ;;
             2)
                 CUFF_PATTERN="2x2 ribbing"
-                CUFF_PATTERN_NOTES="Work 2x2 ribbing as a flat ribbing section"
-                CUFF_RIBBING_SELECTED="yes"
                 ;;
             *)
                 CUFF_PATTERN="1x1 ribbing"
-                CUFF_PATTERN_NOTES="Work 1x1 ribbing as a flat ribbing section"
-                CUFF_RIBBING_SELECTED="yes"
                 ;;
         esac
+        CUFF_RIBBING_SELECTED="yes"
         CUFF_FINISH_STYLE="ribbing"
         get_transfer_placement
     else
-        printf "Leg is stockinette. Choose cuff finish:\n"
-        printf "1) Folded hem (stockinette, hand stitch after removal)\n"
+        printf "Choose cuff finish:\n"
+        printf "1) Folded hem\n"
         printf "2) 1x1 ribbing\n"
         printf "3) 2x2 ribbing\n"
         printf "Choice (1-3): "
@@ -334,27 +318,23 @@ get_cuff_pattern() {
         case "$cuff_finish_choice" in
             1)
                 CUFF_PATTERN="folded hem"
-                CUFF_PATTERN_NOTES="Work stockinette for cuff depth, fold, and hand stitch down"
                 CUFF_RIBBING_SELECTED="no"
                 CUFF_FINISH_STYLE="folded hem"
                 ;;
             2)
                 CUFF_PATTERN="1x1 ribbing"
-                CUFF_PATTERN_NOTES="Work 1x1 ribbing as a flat ribbing section"
                 CUFF_RIBBING_SELECTED="yes"
                 CUFF_FINISH_STYLE="ribbing"
                 get_transfer_placement
                 ;;
             3)
                 CUFF_PATTERN="2x2 ribbing"
-                CUFF_PATTERN_NOTES="Work 2x2 ribbing as a flat ribbing section"
                 CUFF_RIBBING_SELECTED="yes"
                 CUFF_FINISH_STYLE="ribbing"
                 get_transfer_placement
                 ;;
             *)
                 CUFF_PATTERN="folded hem"
-                CUFF_PATTERN_NOTES="Work stockinette for cuff depth, fold, and hand stitch down"
                 CUFF_RIBBING_SELECTED="no"
                 CUFF_FINISH_STYLE="folded hem"
                 ;;
@@ -371,22 +351,16 @@ get_transfer_placement() {
 
     print_section "Ribbing Transfer Layout"
     printf "When moving ribber stitches to main bed, where should added stitches go?\n"
-    printf "1) Place all added stitches on one side\n"
-    printf "2) Split added stitches evenly across both sides\n"
+    printf "1) All added stitches on one side (seam on side of leg)\n"
+    printf "2) Split added stitches evenly across both sides (seam on back of leg)\n"
     printf "Choice (1-2): "
     read -r transfer_choice
 
     case "$transfer_choice" in
         1)
-            TRANSFER_PLACEMENT="one-side"
             TRANSFER_PLACEMENT_NOTES="Place all added stitches on one side of the main bed"
             ;;
-        2)
-            TRANSFER_PLACEMENT="split"
-            TRANSFER_PLACEMENT_NOTES="Split added stitches evenly to each side of the main bed"
-            ;;
         *)
-            TRANSFER_PLACEMENT="split"
             TRANSFER_PLACEMENT_NOTES="Split added stitches evenly to each side of the main bed"
             ;;
     esac
@@ -429,7 +403,7 @@ get_heel_type() {
 
     printf "Choose heel construction (Toe-Up):\n"
     printf "1) Short Row Heel\n"
-    printf "2) Afterthought Heel\n"
+    printf "2) Afterthought Heel (Rehung on bed and worked Reverse-Wedge in the round)\n"
     printf "Choice (1-2): "
     read -r heel_choice
 
@@ -528,26 +502,20 @@ calculate_toe_stitches() {
     if [ $((TOE_ROUNDS % 2)) -eq 1 ]; then
         TOE_ROUNDS=$((TOE_ROUNDS - 1))
     fi
-
-    # Each needle gets half
-    TOE_PER_NEEDLE=$((TOE_ROUNDS / 2))
 }
 
 calculate_heel_stitches() {
     # Heel flap stitches are half of cast-on
     HEEL_STITCHES=$((CAST_ON / 2))
 
-    # For short row and afterthought heels, the unwrapped/remaining stitches
-    # should be approximately 1/3 of the heel stitches
-    HEEL_WRAP_STITCHES=$((HEEL_STITCHES / 3))
+    # Shared short-row center stitches used by both toe and heel shaping.
+    # Approximate target is 1/3 of the half-sock stitch count.
+    SHORT_ROW_CENTER_STITCHES=$((HEEL_STITCHES / 3))
 
     # Ensure even number for division onto 2 needles
-    if [ $((HEEL_WRAP_STITCHES % 2)) -eq 1 ]; then
-        HEEL_WRAP_STITCHES=$((HEEL_WRAP_STITCHES - 1))
+    if [ $((SHORT_ROW_CENTER_STITCHES % 2)) -eq 1 ]; then
+        SHORT_ROW_CENTER_STITCHES=$((SHORT_ROW_CENTER_STITCHES - 1))
     fi
-
-    # Each needle gets half
-    HEEL_PER_NEEDLE=$((HEEL_WRAP_STITCHES / 2))
 }
 
 
@@ -582,10 +550,8 @@ display_summary() {
     printf "\n%bPATTERN DETAILS:%b\n" "$BOLD" "$RESET"
     printf "  Leg pattern: %s\n" "$LEG_PATTERN"
     printf "  Cuff pattern: %s\n" "$CUFF_PATTERN"
-    printf "  Cuff finish style: %s\n" "$CUFF_FINISH_STYLE"
     printf "  Toe type: %s\n" "$TOE_TYPE"
     printf "  Heel type: %s\n" "$HEEL_TYPE"
-    printf "  Row counter style: RC000 baseline, in-the-round rows count by 2\n"
 
     printf "\n%bLENGTHS:%b\n" "$BOLD" "$RESET"
     if [ "$MEASUREMENT_UNITS" = "metric" ]; then
@@ -622,7 +588,7 @@ display_summary() {
 
     if [ "$SEAM_REQUIRED" = "yes" ]; then
         printf "\n%bSEAM NOTE:%b\n" "$BOLD" "$RESET"
-        printf "  Ribbing selection requires a flat section and a leg seam.\n"
+        printf "  Ribbing selection requires a flat section and a seam.\n"
         printf "  Transfer layout: %s\n" "$TRANSFER_PLACEMENT_NOTES"
     fi
 }
@@ -714,83 +680,105 @@ edit_selection() {
 # PATTERN GENERATION FUNCTIONS
 # ============================================================================
 
-rc_label() {
-    printf "RC%03d" "$1"
-}
-
 generate_pattern() {
     PATTERN_TEXT=""
 
     if [ "$MEASUREMENT_UNITS" = "metric" ]; then
-        local foot_len=$(inches_to_cm "$FOOT_LENGTH")
-        local foot_circ=$(inches_to_cm "$FOOT_CIRCUMFERENCE")
-        local leg_len=$(inches_to_cm "$LEG_LENGTH")
-        local cuff_len=$(inches_to_cm "$CUFF_LENGTH")
-        local unit_display="cm"
+        foot_len=$(inches_to_cm "$FOOT_LENGTH")
+        foot_circ=$(inches_to_cm "$FOOT_CIRCUMFERENCE")
+        leg_len=$(inches_to_cm "$LEG_LENGTH")
+        cuff_len=$(inches_to_cm "$CUFF_LENGTH")
+        unit_display="cm"
     else
-        local foot_len="$(printf "%.1f" "$FOOT_LENGTH")"
-        local foot_circ="$(printf "%.1f" "$FOOT_CIRCUMFERENCE")"
-        local leg_len="$(printf "%.1f" "$LEG_LENGTH")"
-        local cuff_len="$(printf "%.1f" "$CUFF_LENGTH")"
-        local unit_display="inches"
+        foot_len=$(printf "%.1f" "$FOOT_LENGTH")
+        foot_circ=$(printf "%.1f" "$FOOT_CIRCUMFERENCE")
+        leg_len=$(printf "%.1f" "$LEG_LENGTH")
+        cuff_len=$(printf "%.1f" "$CUFF_LENGTH")
+        unit_display="inches"
     fi
 
-    local actual_spi=$(printf "%.1f" "$GAUGE_SPI" | awk -v gw="$GAUGE_WIDTH" '{printf "%.1f", $1 / gw}')
-    local actual_rpi=$(printf "%.1f" "$GAUGE_RPI" | awk -v gh="$GAUGE_HEIGHT" '{printf "%.1f", $1 / gh}')
+    actual_spi=$(printf "%.1f" "$GAUGE_SPI" | awk -v gw="$GAUGE_WIDTH" '{printf "%.1f", $1 / gw}')
+    actual_rpi=$(printf "%.1f" "$GAUGE_RPI" | awk -v gh="$GAUGE_HEIGHT" '{printf "%.1f", $1 / gh}')
 
-    local toe_rounds_used
+    short_row_section_stitches=$((CAST_ON / 2))
+    short_row_center_stitches=$SHORT_ROW_CENTER_STITCHES
+    round_stitches_per_bed=$((CAST_ON / 2))
+
+    sr_hold_per_side=$(( (short_row_section_stitches - short_row_center_stitches) / 2 ))
+    sr_rc_deepest=$((short_row_section_stitches - short_row_center_stitches))
+    sr_rc_end=$((sr_rc_deepest * 2))
+
     if [ "$TOE_TYPE" = "wedge" ]; then
         toe_rounds_used=$(( (CAST_ON - TOE_ROUNDS) / 2 ))
     else
-        toe_rounds_used=$(( CAST_ON - TOE_ROUNDS ))
+        toe_rounds_used=$sr_rc_end
     fi
 
-    local foot_total_rounds
-    foot_total_rounds=$(printf "%.0f" "$FOOT_LENGTH" | awk -v rpi="$GAUGE_RPI" -v gh="$GAUGE_HEIGHT" '{printf "%.0f", ($1 * rpi) / gh}')
+    toe_cast_on_per_bed=$((TOE_ROUNDS / 2))
+    wedge_toe_rc_end=$((toe_rounds_used * 2))
 
-    local foot_only_rounds=$((foot_total_rounds - toe_rounds_used))
+    foot_total_rounds=$(printf "%.0f" "$FOOT_LENGTH" | awk -v rpi="$GAUGE_RPI" -v gh="$GAUGE_HEIGHT" '{printf "%.0f", ($1 * rpi) / gh}')
+    foot_only_rounds=$((foot_total_rounds - toe_rounds_used))
     if [ "$foot_only_rounds" -lt 0 ]; then
         foot_only_rounds=0
     fi
+    foot_rc_end=$((foot_only_rounds * 2))
 
-    local heel_short_rows=$((HEEL_STITCHES - HEEL_WRAP_STITCHES))
-    local afterthought_heel_rounds=$(( (HEEL_STITCHES - HEEL_WRAP_STITCHES) / 2 ))
-
-    local toe_rc_end
-    if [ "$TOE_TYPE" = "wedge" ]; then
-        toe_rc_end=$((toe_rounds_used * 2))
-    else
-        toe_rc_end=$toe_rounds_used
-    fi
-
-    local foot_rc_end=$((foot_only_rounds * 2))
-    local heel_rc_end=$heel_short_rows
-
-    local leg_rc_end
     if [ "$LEG_RIBBING_SELECTED" = "yes" ]; then
         leg_rc_end=$LEG_ROUNDS
     else
         leg_rc_end=$((LEG_ROUNDS * 2))
     fi
 
-    local cuff_rc_end
     if [ "$CUFF_RIBBING_SELECTED" = "yes" ]; then
         cuff_rc_end=$CUFF_ROUNDS
     else
         cuff_rc_end=$((CUFF_ROUNDS * 2))
     fi
 
+    # Format RC values as three-digit numbers to match row counter displays
+    sr_rc_deepest=$(printf "%03d" "$sr_rc_deepest")
+    sr_rc_end=$(printf "%03d" "$sr_rc_end")
+    wedge_toe_rc_end=$(printf "%03d" "$wedge_toe_rc_end")
+    foot_rc_end=$(printf "%03d" "$foot_rc_end")
+    leg_rc_end=$(printf "%03d" "$leg_rc_end")
+    cuff_rc_end=$(printf "%03d" "$cuff_rc_end")
+
     PATTERN_TEXT="${PATTERN_TEXT}================================================================================
 DOUBLE BED MACHINE SOCK PATTERN (TOE-UP)
 Generated from Double Bed Sock Pattern Generator
 ================================================================================
 
-MACHINE ASSUMPTIONS
-===================
-- Standard gauge class double bed machine (4.5 mm)
-- Brand-neutral terminology: front bed, back bed, hold position, working position
-- In-the-round sections: one round = two carriage passes (RC advances by 2)
-- Short-row sections worked flat on main bed: RC advances by 1 per row
+BASIC ASSUMPTIONS
+=================
+- You are comfortable with your machine"
+
+    if [ "$LEG_RIBBING_SELECTED" = "yes" ] || [ "$CUFF_RIBBING_SELECTED" = "yes" ]; then
+        PATTERN_TEXT="${PATTERN_TEXT}
+- You are comfortable moving stitches between beds"
+    fi
+
+    if [ "$TOE_TYPE" = "short row" ] || [ "$HEEL_TYPE" = "short row" ]; then
+        PATTERN_TEXT="${PATTERN_TEXT}
+- You are comfortable short row shaping"
+    fi
+
+    PATTERN_TEXT="${PATTERN_TEXT}
+- Your knitting machine has a ribber, and can knit in-the-round (main bed and ribber carriage can knit in one direction while slipping in the other)"
+
+    if [ "$TOE_TYPE" = "short row" ] || [ "$HEEL_TYPE" = "short row" ]; then
+        PATTERN_TEXT="${PATTERN_TEXT}
+- Your machine can put stitches in hold and not knit them
+- Your machine can not knit stitches in hold on the main bed"
+    fi
+
+    if [ "$LEG_RIBBING_SELECTED" = "yes" ] || [ "$CUFF_RIBBING_SELECTED" = "yes" ]; then
+        PATTERN_TEXT="${PATTERN_TEXT}
+- Your machine can be set to not knit stitches in working (B) position in either/both directions"
+    fi
+
+    PATTERN_TEXT="${PATTERN_TEXT}
+- You can use only the main bed of your machine while the ribber is still attached and has stitches attached to it
 
 PROJECT DETAILS
 ===============
@@ -803,184 +791,185 @@ Leg Pattern: $LEG_PATTERN
 Cuff Pattern: $CUFF_PATTERN
 
 MEASUREMENTS & GAUGE
-====================
+===================="
+
+    if [ -n "$SHOE_SIZE" ]; then
+        PATTERN_TEXT="${PATTERN_TEXT}
+Shoe size: US $SHOE_SIZE_TYPE $SHOE_SIZE"
+    fi
+
+    PATTERN_TEXT="${PATTERN_TEXT}
 Foot Length: $foot_len $unit_display
 Foot Circumference: $foot_circ $unit_display
 Leg Length: $leg_len $unit_display
 Cuff Length: $cuff_len $unit_display
 Gauge: $actual_spi stitches and $actual_rpi rows per inch
 
-CALCULATED COUNTS
-=================
-Cast-on target circumference: $CAST_ON stitches
-Toe base stitches: $TOE_ROUNDS
-Heel stitches: $HEEL_STITCHES
-Leg rows/rounds input: $LEG_ROUNDS
-Cuff rows/rounds input: $CUFF_ROUNDS
+PATTERN CONSTRUCTION
+===================="
+
+    if [ "$TOE_TYPE" = "short row" ]; then
+        PATTERN_TEXT="${PATTERN_TEXT}
+
+TOE SECTION (SHORT ROW TOE, MAIN BED ONLY)
+-------------------------------------------
+- Cast on $short_row_section_stitches stitches on the main bed using waste yarn.
+- Knit several rows of waste yarn (at least 2 inches recommended).
+- Set row counter to 000.
+- Work short rows on the main bed to shape toe.
+  - Set carriage to HOLD.
+  - Bring 1 needle on the side of the bed opposite the carriage into hold, knit 1 row.
+  - Wrap the needle that was just placed in hold.
+  - Bring 1 needle into hold on the side of the bed opposite the carriage, knit 1 row.
+  - Wrap the needle that was just placed in hold.
+    - Repeat until $sr_hold_per_side stitches are in hold on each side and there are $short_row_center_stitches left in the middle (RC$sr_rc_deepest).
+  - Begin bringing needles back into work one per row, alternating sides.
+    - Repeat until all stitches are back in work ($short_row_section_stitches stitches, RC$sr_rc_end)."
+    else
+        PATTERN_TEXT="${PATTERN_TEXT}
+
+TOE SECTION (WEDGE TOE, IN THE ROUND)
+-------------------------------------
+- Set row counter to RC000.
+- Bring $toe_cast_on_per_bed needles into work on each bed and knit a zig-zag row.
+- Hang ribber comb and weights.
+- Set carriages to knit in the round.
+- Knit 1 round.
+- Increase 1 stitch on each end of each bed.
+- Knit 2 rounds.
+- Repeat the increase round and 2 knit rounds until $round_stitches_per_bed stitches are on each bed, $CAST_ON in total (RC$wedge_toe_rc_end).
 "
-
-    if [ -n "$YARN_BRAND" ] || [ -n "$YARN_WEIGHT" ] || [ -n "$YARN_COLOR" ]; then
-        PATTERN_TEXT="${PATTERN_TEXT}
-
-YARN
-====
-Brand: $YARN_BRAND
-Weight/Line: $YARN_WEIGHT
-Color/Dye lot: $YARN_COLOR"
-    fi
-
-    if [ "$SEAM_REQUIRED" = "yes" ]; then
-        PATTERN_TEXT="${PATTERN_TEXT}
-
-SEAM NOTICE
-===========
-Leg and/or cuff ribbing requires a flat section while ribber stitches are transferred.
-This creates a seam line up the leg/cuff section.
-Transfer layout selected: $TRANSFER_PLACEMENT_NOTES"
     fi
 
     PATTERN_TEXT="${PATTERN_TEXT}
 
-PATTERN CONSTRUCTION
-====================
-"
+FOOT SECTION (IN THE ROUND)
+---------------------------"
 
-    if [ "$TOE_TYPE" = "wedge" ]; then
+    if [ "$TOE_TYPE" = "short row" ]; then
         PATTERN_TEXT="${PATTERN_TEXT}
-TOE SECTION (WEDGE TOE, IN THE ROUND)
--------------------------------------
-- Cast on toe using your preferred machine-compatible closed-toe setup at $(rc_label 0).
-- Start with $TOE_ROUNDS stitches total.
-- Increase in the round to $CAST_ON stitches total.
-- RC reference: $(rc_label 0) to $(rc_label "$toe_rc_end").
-"
-    else
-        PATTERN_TEXT="${PATTERN_TEXT}
-TOE SECTION (SHORT ROW TOE, FLAT ON MAIN BED)
-----------------------------------------------
-- Cast on toe setup at $(rc_label 0).
-- Work short rows on the main bed to shape toe.
-- Do not apply in-the-round doubling in this section.
-- RC reference: $(rc_label 0) to $(rc_label "$toe_rc_end").
-
-- Reset row counter to $(rc_label 0) after toe is complete.
-"
+- If your ribber has racking capability, set ribber to full pitch.
+- Rehang the live stitches from waste yarn onto the ribber bed ($short_row_section_stitches stitches).
+- Set your machine for in-the-round knitting (main bed and ribber each knit in one direction only, opposite each other).
+- Ensure carriage directions pick up yarn from current yarn position."
     fi
 
-    if [ "$TOE_TYPE" = "wedge" ]; then
-        PATTERN_TEXT="${PATTERN_TEXT}
-
-FOOT SECTION (IN THE ROUND)
----------------------------
-- Knit in the round for approximately $foot_only_rounds rounds.
-- Foot RC reference: $(rc_label "$toe_rc_end") to $(rc_label $((toe_rc_end + foot_rc_end))).
-- Total foot length target: $foot_len $unit_display.
-"
-    else
-        PATTERN_TEXT="${PATTERN_TEXT}
-
-FOOT SECTION (IN THE ROUND)
----------------------------
-- Knit in the round for approximately $foot_only_rounds rounds.
-- Foot RC reference: $(rc_label 0) to $(rc_label "$foot_rc_end").
-- Total foot length target: $foot_len $unit_display.
-"
-    fi
+    PATTERN_TEXT="${PATTERN_TEXT}
+- Reset row count to RC000.
+- Knit in the round for $foot_only_rounds rounds (RC$foot_rc_end)."
 
     if [ "$HEEL_TYPE" = "short row" ]; then
         PATTERN_TEXT="${PATTERN_TEXT}
 
-HEEL SECTION (SHORT ROW HEEL, FLAT ON MAIN BED)
-------------------------------------------------
-- Reset row counter to $(rc_label 0) before heel shaping.
-- Bring non-heel stitches to hold and set carriage so hold stitches do not knit.
-- Work short row heel across $HEEL_STITCHES heel stitches.
-- RC reference: $(rc_label 0) to $(rc_label "$heel_rc_end").
-
-- Reset row counter to $(rc_label 0) after heel is complete.
+HEEL SECTION (SHORT ROW HEEL, MAIN BED ONLY)
+---------------------------------------------
+- Reset row counter to RC000.
+- Drop ribber bed and set up for knitting on the main bed only.
 "
+        if [ "$TOE_TYPE" = "short row" ]; then
+            PATTERN_TEXT="${PATTERN_TEXT}
+- Work short row heel across $short_row_section_stitches heel stitches exactly as for the toe (RC$sr_rc_end)."
+        else
+            PATTERN_TEXT="${PATTERN_TEXT}
+- Work short rows across $short_row_section_stitches heel stitches.
+- Set row counter to 000.
+- Drop ribber bed and set up for knitting on the main bed only.
+- Set carriage to HOLD.
+- Bring 1 needle closest to center 0 on the side of the bed opposite the carriage into hold, knit 1 row.
+- Wrap the needle that was just placed in hold by bringing the yarn under the needle just placed in hold.
+- Bring 1 needle into hold on the side of the bed opposite the carriage, knit 1 row.
+- Wrap the needle that was just placed in hold, makings sure to bring the yarn over the other needles in hold.
+- Repeat until $sr_hold_per_side stitches are in hold on each side and there are $short_row_center_stitches left in the middle (RC$sr_rc_deepest).
+- Begin bringing needles back into work:
+    - Bring 1 needle back into work, closest to center 0, on the side of the bed opposite the carriage, knit 1 row.
+- Repeat until all stitches are back in work ($short_row_section_stitches stitches, RC$sr_rc_end)."
+        fi
     else
         PATTERN_TEXT="${PATTERN_TEXT}
 
 AFTERTHOUGHT HEEL PLACEMENT (AT END OF FOOT)
 ---------------------------------------------
-- At foot end, place future heel opening using waste yarn on the heel half of stitches.
-- disengage knitting in the round, and knit two rows of waste yarn at a looser tension on the main bed, you will probably want to use your main bed sinker plate for this, and then switch back to your ribber arm.
-
-- Reset row counter to $(rc_label 0) before starting leg.
+- Place waste yarn as a stitch holder/marker for heel placement on heel stitches.
+- It may be easier to hand-manipulate these stitches, but if using the carriage:
+  - Disengage knitting in the round, drop the ribber, and attach your main bed sinker plate
+- Knit two rows of waste yarn at a looser tension on the main bed.
 "
     fi
 
     PATTERN_TEXT="${PATTERN_TEXT}
 
 LEG SECTION
------------
-Pattern: $LEG_PATTERN
-- $LEG_PATTERN_NOTES
-"
+-----------"
+
+    if [ "$HEEL_TYPE" = "afterthought" ]; then
+        PATTERN_TEXT="${PATTERN_TEXT}
+- Keep the waste-yarn heel marker in place for later heel knitting.
+- Restore your normal in-the-round setup before continuing the leg."
+    fi
 
     if [ "$LEG_RIBBING_SELECTED" = "yes" ]; then
         PATTERN_TEXT="${PATTERN_TEXT}
-- Move ribber stitches to waste yarn, clear ribber bed for in-the-round stockinette workflow.
-- Add the same number of stitches to the main bed: $TRANSFER_PLACEMENT_NOTES.
-- Leg is worked flat for ribbing and will include a seam.
-- Leg RC reference: $(rc_label 0) to $(rc_label "$leg_rc_end")."
+- Disengage row counter and set main bed for partial knitting.
+- Knit several rows of waste yarn on ribber only.
+- Remove ribber stitches and let hang from main bed.
+- Set main carriage for normal knitting with stitches in HOLD.
+- Place all stitches on main bed into HOLD.
+- On opposite side from working yarn, cast on $HEEL_STITCHES stitches in waste yarn next to held stitches.
+- Knit several rows of waste yarn over these stitches.
+- Remove waste yarn from feeder and free-pass carriage back to working-yarn side.
+- Rethread working yarn and bring up ribber.
+- Set up for $LEG_PATTERN. Reengage row counter and reset to RC000.
+- Rib for $LEG_ROUNDS rows (RC$leg_rc_end)."
     else
         PATTERN_TEXT="${PATTERN_TEXT}
-- Continue in-the-round stockinette on double bed.
-- Leg RC reference: $(rc_label 0) to $(rc_label "$leg_rc_end")."
+- Continue in-the-round stockinette for $LEG_ROUNDS rounds (RC$leg_rc_end)."
     fi
 
     PATTERN_TEXT="${PATTERN_TEXT}
 
 CUFF SECTION
 ------------
-- Reset row counter to $(rc_label 0) at cuff start.
-"
+- Reset row counter to RC000."
 
-    if [ "$CUFF_FINISH_STYLE" = "folded hem" ]; then
+    if [ "$CUFF_RIBBING_SELECTED" = "yes" ]; then
         PATTERN_TEXT="${PATTERN_TEXT}
-- Work stockinette cuff depth for folded hem.
-- Cuff RC reference: $(rc_label 0) to $(rc_label "$cuff_rc_end").
-- Remove from machine and hand stitch folded hem in place."
-    elif [ "$CUFF_RIBBING_SELECTED" = "yes" ]; then
-        PATTERN_TEXT="${PATTERN_TEXT}
-- Work cuff ribbing as flat section: $CUFF_PATTERN.
-- If needed, transfer ribber stitches to waste yarn and rebalance stitches to main bed: $TRANSFER_PLACEMENT_NOTES.
-- Cuff RC reference: $(rc_label 0) to $(rc_label "$cuff_rc_end")."
+- Set up for $CUFF_PATTERN"
 
-        if [ "$LEG_RIBBING_SELECTED" != "yes" ]; then
+        if [ "$CUFF_PATTERN" = "1x1 ribbing" ]; then
             PATTERN_TEXT="${PATTERN_TEXT}
-- Optional alternative: remove sock on waste yarn, pick up stitches, and knit cuff ribbing in the round by hand."
+- It may be easier to transfer all stitches to the main bed and then set up for 1x1 ribbing.
+- Knit $CUFF_ROUNDS rows (RC$cuff_rc_end)."
+        else
+            PATTERN_TEXT="${PATTERN_TEXT}
+- Knit $CUFF_ROUNDS rows (RC$cuff_rc_end)."
         fi
+    elif [ "$CUFF_FINISH_STYLE" = "folded hem" ]; then
+        PATTERN_TEXT="${PATTERN_TEXT}
+- Continue in stockinette for $CUFF_ROUNDS rows (RC$cuff_rc_end)."
     else
         PATTERN_TEXT="${PATTERN_TEXT}
-- Work cuff in stockinette and finish per preference.
-- Cuff RC reference: $(rc_label 0) to $(rc_label "$cuff_rc_end")."
-    fi
-
-    if [ "$HEEL_TYPE" = "afterthought" ]; then
-        local afterthought_rc_end=$((afterthought_heel_rounds * 2))
-        PATTERN_TEXT="${PATTERN_TEXT}
-
-AFTERTHOUGHT HEEL (WORK AFTER CUFF)
------------------------------------
-- Rehang heel opening stitches from waste-yarn section onto machine.
-- Re-engage in-the-round knitting for heel.
-- Work wedge-reverse shaping: start at full heel circumference and decrease in the round to approximately one-third of heel stitches ($HEEL_WRAP_STITCHES stitches).
-- Heel RC reference: $(rc_label 0) to $(rc_label "$afterthought_rc_end").
-- Close remaining heel stitches with Kitchener stitch.
-"
+- Knit cuff section for $CUFF_ROUNDS rows (RC$cuff_rc_end)."
     fi
 
     PATTERN_TEXT="${PATTERN_TEXT}
 
+Cast off with stretchy cast off, leaving a long tail for seam and Kitchener finishing.
+
 FINISHING INSTRUCTIONS
-======================
-1. Remove sock from machine securely.
-2. Weave in ends.
-3. If folded hem was selected, fold and hand stitch cuff.
-4. If seam sections were worked, seam neatly for comfort.
+======================"
+
+    if [ "$LEG_RIBBING_SELECTED" = "yes" ]; then
+        PATTERN_TEXT="${PATTERN_TEXT}
+- Kitchener stitch the leg ribbing to the foot.
+- Sew side seam using flat seam technique."
+    fi
+    if [ "$CUFF_PATTERN" = "folded hem" ]; then
+        PATTERN_TEXT="${PATTERN_TEXT}
+- Fold cuff in half and sew down fold to create hem."
+    fi
+    PATTERN_TEXT="${PATTERN_TEXT}
+- Weave in ends.
+- Block as appropriate for your yarn.
 
 ================================================================================
 Pattern generated by Double Bed Sock Pattern Generator
@@ -1113,7 +1102,6 @@ main() {
     pause_for_user
 
     # Gather all input
-    set_construction_method
     get_measurement_units
     get_foot_size
     get_gauge
