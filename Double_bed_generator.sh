@@ -46,7 +46,7 @@ printf_wrapped() {
 }
 
 print_welcome() {
-    printf "%b" "============================================\n${HIGHLIGHT}WELCOME TO THE DOUBLE BED SOCK GENERATOR!${RESET}\n============================================\n\nThis tool generates machine-agnostic instructions for domestic double bed sock knitting based on your measurements, gauge, and preferences.\n\n${BOLD}NOTE: Knit a gauge swatch on your machine before using this tool to ensure accurate stitch and row counts.${RESET}\n\n${HIGHLIGHT}Let's get started!${RESET}\n" | fold -w 80 -s
+    printf "%b" "============================================\n${HIGHLIGHT}WELCOME TO THE DOUBLE BED SOCK GENERATOR!${RESET}\n============================================\n\nThis tool generates instructions for a sock knitting pattern that is constructed on a domestic double bed knitting machine, based on your measurements, gauge, and preferences.\n\n${BOLD}NOTE: Knit a gauge swatch on your machine before using this tool to ensure accurate stitch and row counts.\nThis pattern is set to 90% ease.${RESET}\n\n${HIGHLIGHT}Let's get started!${RESET}\n" | fold -w 80 -s
 }
 
 
@@ -715,7 +715,7 @@ generate_pattern() {
     fi
 
     toe_cast_on_per_bed=$((TOE_ROUNDS / 2))
-    wedge_toe_rc_end=$((toe_rounds_used * 2))
+    wedge_toe_rc_end=$(((toe_rounds_used * 2) + 3)) # Add 3 rounds for the zigzag row and final wedge shaping after toe rounds are done
 
     foot_total_rounds=$(printf "%.0f" "$FOOT_LENGTH" | awk -v rpi="$GAUGE_RPI" -v gh="$GAUGE_HEIGHT" '{printf "%.0f", ($1 * rpi) / gh}')
     foot_only_rounds=$((foot_total_rounds - toe_rounds_used))
@@ -768,8 +768,7 @@ BASIC ASSUMPTIONS
 
     if [ "$TOE_TYPE" = "short row" ] || [ "$HEEL_TYPE" = "short row" ]; then
         PATTERN_TEXT="${PATTERN_TEXT}
-- Your machine can put stitches in hold and not knit them
-- Your machine can not knit stitches in hold on the main bed"
+- Your machine can put stitches in hold and not knit them"
     fi
 
     if [ "$LEG_RIBBING_SELECTED" = "yes" ] || [ "$CUFF_RIBBING_SELECTED" = "yes" ]; then
@@ -803,11 +802,15 @@ Foot Length: $foot_len $unit_display
 Foot Circumference: $foot_circ $unit_display
 Leg Length: $leg_len $unit_display
 Cuff Length: $cuff_len $unit_display
-Gauge: $actual_spi stitches and $actual_rpi rows per inch
+Gauge: $actual_spi stitches and $actual_rpi rows per inch"
+    if [ "$MEASUREMENT_UNITS" = "metric" ]; then
+        PATTERN_TEXT="${PATTERN_TEXT}
+($GAUGE_SPI stitches per $GAUGE_WIDTH cm and $GAUGE_RPI rows per $GAUGE_HEIGHT cm)"
+    fi
+    PATTERN_TEXT="${PATTERN_TEXT}
 
 PATTERN CONSTRUCTION
 ===================="
-
     if [ "$TOE_TYPE" = "short row" ]; then
         PATTERN_TEXT="${PATTERN_TEXT}
 
@@ -862,26 +865,23 @@ FOOT SECTION (IN THE ROUND)
         PATTERN_TEXT="${PATTERN_TEXT}
 
 HEEL SECTION (SHORT ROW HEEL, MAIN BED ONLY)
----------------------------------------------
-- Reset row counter to RC000.
-- Drop ribber bed and set up for knitting on the main bed only.
-"
+---------------------------------------------"
         if [ "$TOE_TYPE" = "short row" ]; then
             PATTERN_TEXT="${PATTERN_TEXT}
 - Work short row heel across $short_row_section_stitches heel stitches exactly as for the toe (RC$sr_rc_end)."
         else
             PATTERN_TEXT="${PATTERN_TEXT}
-- Work short rows across $short_row_section_stitches heel stitches.
+- Work short rows across $short_row_section_stitches heel stitches:
 - Set row counter to 000.
 - Drop ribber bed and set up for knitting on the main bed only.
 - Set carriage to HOLD.
-- Bring 1 needle closest to center 0 on the side of the bed opposite the carriage into hold, knit 1 row.
-- Wrap the needle that was just placed in hold by bringing the yarn under the needle just placed in hold.
+- Bring 1 needle (closest to center 0) on the side of the bed opposite the carriage into hold, knit 1 row.
+- Wrap the needle that was just placed in hold by bringing the yarn under the needle.
 - Bring 1 needle into hold on the side of the bed opposite the carriage, knit 1 row.
-- Wrap the needle that was just placed in hold, makings sure to bring the yarn over the other needles in hold.
+- Wrap the needle that was just placed in hold, making sure to bring the yarn over the other needles in hold.
 - Repeat until $sr_hold_per_side stitches are in hold on each side and there are $short_row_center_stitches left in the middle (RC$sr_rc_deepest).
 - Begin bringing needles back into work:
-    - Bring 1 needle back into work, closest to center 0, on the side of the bed opposite the carriage, knit 1 row.
+    - Bring 1 needle back into work (closest to center 0) on the side of the bed opposite the carriage, knit 1 row.
 - Repeat until all stitches are back in work ($short_row_section_stitches stitches, RC$sr_rc_end)."
         fi
     else
@@ -922,6 +922,7 @@ LEG SECTION
 - Rib for $LEG_ROUNDS rows (RC$leg_rc_end)."
     else
         PATTERN_TEXT="${PATTERN_TEXT}
+- Bring ribber back up and set up for in-the-round knitting again, ensuring carriage directions pick up yarn from current yarn position on main bed and knit on the ribber bed first.
 - Continue in-the-round stockinette for $LEG_ROUNDS rounds (RC$leg_rc_end)."
     fi
 
@@ -950,9 +951,12 @@ CUFF SECTION
         PATTERN_TEXT="${PATTERN_TEXT}
 - Knit cuff section for $CUFF_ROUNDS rows (RC$cuff_rc_end)."
     fi
-
-    PATTERN_TEXT="${PATTERN_TEXT}
-
+    if [ "$CUFF_FINISH_STYLE" = "folded hem" ]; then
+        PATTERN_TEXT="${PATTERN_TEXT}
+        Cut yarn, leaving long tail for sewing down the hem.
+        Knit several rows of waste yarn and remove from machine."
+        fi
+        PATTERN_TEXT="${PATTERN_TEXT}
 Cast off with stretchy cast off, leaving a long tail for seam and Kitchener finishing.
 
 FINISHING INSTRUCTIONS
