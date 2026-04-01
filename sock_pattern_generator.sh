@@ -198,7 +198,7 @@ get_gauge() {
     printf "How do you want to enter gauge?\n"
     printf "1) Stitches/rows per inch (standard)\n"
     printf "2) Stitches/rows per 4 inches (common for swatches)\n"
-    printf "3) Stitches/rows over customer number of inches\n"
+    printf "3) Stitches/rows over custom number of inches\n"
     printf "4) Stitches/rows per 10 cm (metric swatch)\n"
     printf "5) Stitches/rows over custom number of cm\n"
     printf "Choice (1-5): "
@@ -1268,7 +1268,6 @@ output_options() {
         *)
             printf "Invalid choice.\n"
             pause_for_user
-            output_options
             return 0
             ;;
     esac
