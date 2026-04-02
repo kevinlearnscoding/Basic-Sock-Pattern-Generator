@@ -37,11 +37,29 @@ for i in {1..50}; do
         GAUGE=$((1 + RANDOM % 5))
         echo $GAUGE
         case $GAUGE in
-            1) echo $((5 + RANDOM % 5)); echo $((7 + RANDOM % 7)) ;;
-            2) echo $((25 + RANDOM % 11)); echo $((34 + RANDOM % 13)) ;;
-            3) echo $((25 + RANDOM % 11)); rand_float 3.5 4.25; echo $((34 + RANDOM % 13)); rand_float 3.5 4.25 ;;
-            4) echo $((25 + RANDOM % 11)); echo $((34 + RANDOM % 13)) ;;
-            5) echo $((25 + RANDOM % 11)); rand_float 3.5 4.25; echo $((34 + RANDOM % 13)); rand_float 3.5 4.25 ;;
+            1) echo $((5 + RANDOM % 4)); echo $((7 + RANDOM % 4)) ;;
+            2) echo $((26 + RANDOM % 8)); echo $((30 + RANDOM % 6)) ;;
+            3)
+                STITCH_COUNT=$((26 + RANDOM % 8))
+                STITCHES_PER_INCH=$((5 + RANDOM % 4))
+                echo $STITCH_COUNT
+                awk -v count="$STITCH_COUNT" -v spi="$STITCHES_PER_INCH" 'BEGIN { printf "%.2f\n", count / spi }'
+                ROW_COUNT=$((30 + RANDOM % 6))
+                ROWS_PER_INCH=$((7 + RANDOM % 4))
+                echo $ROW_COUNT
+                awk -v count="$ROW_COUNT" -v rpi="$ROWS_PER_INCH" 'BEGIN { printf "%.2f\n", count / rpi }'
+                ;;
+            4) echo $((26 + RANDOM % 8)); echo $((30 + RANDOM % 6)) ;;
+            5)
+                STITCH_COUNT=$((26 + RANDOM % 8))
+                STITCHES_PER_INCH=$((5 + RANDOM % 4))
+                echo $STITCH_COUNT
+                awk -v count="$STITCH_COUNT" -v spi="$STITCHES_PER_INCH" 'BEGIN { printf "%.2f\n", count / spi * 2.54 }'
+                ROW_COUNT=$((30 + RANDOM % 6))
+                ROWS_PER_INCH=$((7 + RANDOM % 4))
+                echo $ROW_COUNT
+                awk -v count="$ROW_COUNT" -v rpi="$ROWS_PER_INCH" 'BEGIN { printf "%.2f\n", count / rpi * 2.54 }'
+                ;;
         esac
 
         # Leg/Cuff
