@@ -483,13 +483,19 @@ calculate_circumference_stitches() {
         CIRCUMFERENCE_STITCHES=$((CIRCUMFERENCE_STITCHES - 1))
     fi
 
-    # HALF_CIRCUMFERENCE_STITCHES does not need to be rounded as it is already rounded above
-    HALF_CIRCUMFERENCE_STITCHES=$((CIRCUMFERENCE_STITCHES / 2))
+    HALF_CIRC_STITCHES=$((CIRCUMFERENCE_STITCHES / 2))
 
-    ONE_THIRD_CIRCUMFERENCE_STITCHES=$((CIRCUMFERENCE_STITCHES / 3))
-    # ONE_THIRD_CIRCUMFERENCE_STITCHES needs to be rounded to an even number for easier handling
-    if [ $((ONE_THIRD_CIRCUMFERENCE_STITCHES % 2)) -eq 1 ]; then
-        ONE_THIRD_CIRC=$((ONE_THIRD_CIRC - 1))
+    ONE_THIRD_CIRC_STITCHES=$((CIRCUMFERENCE_STITCHES / 3))
+    # ONE_THIRD_CIRC_STITCHES needs to be rounded to an even number for easier handling
+    if [ $((ONE_THIRD_CIRC_STITCHES % 2)) -eq 1 ]; then
+        ONE_THIRD_CIRC_STITCHES=$((ONE_THIRD_CIRC_STITCHES - 1))
+    fi
+    if [ TOE_TYPE = "wedge" ]; then
+    # Wedge toe increases add 4 stitches per increase round.
+    # Adjust the one-third cast-on downward until the remaining stitches are divisible by 4.
+    while [ $(((CIRCUMFERENCE_STITCHES - ONE_THIRD_CIRC_STITCHES) % 4)) -ne 0 ]; do
+        ONE_THIRD_CIRC_STITCHES=$((ONE_THIRD_CIRC_STITCHES - 2))
+    done
     fi
 }
 
@@ -646,7 +652,6 @@ edit_selection() {
         2)
             get_foot_size
             calculate_circumference_stitches
-            calculate_toe_stitches
             calculate_shortrow_stitches
             ;;
         3)
@@ -724,52 +729,48 @@ generate_pattern() {
     # WEDGE_INCREASES calculates how many increase rows are needed for a wedge toe
     # Cast on one third stitches of total circumference, divided evenly across both beds
     # Increase each end of each bed every other round until reaching full circumference stitch count
-    WEDGE_INCREASES=$(( (CIRCUMFERENCE_STITCHES - ONE_THIRD_CIRC) / 4 ))
+    WEDGE_INCREASES=$(( (CIRCUMFERENCE_STITCHES - ONE_THIRD_CIRC_STITCHES) / 4 ))
+
+    # Use one canonical depth model for foot-length budgeting
+    TOE_FOOT_ROWS=$SR_DEPTH
 
     if [ "$TOE_TYPE" = "wedge" ]; then
-        WEDGE_TOE_NEEDLES_PER_BED=$(( (ONE_THIRD_CIRC) / 2 ))
-        toe_bottom_rows=$WEDGE_TOE_NEEDLES_PER_BED
-    else
-        toe_bottom_rows=$SR_DEPTH
+        WEDGE_TOE_NEEDLES_PER_BED=$(( (ONE_THIRD_CIRC_STITCHES) / 2 ))
     fi
 
     if [ "$HEEL_TYPE" = "short row" ]; then
-        heel_rounds_used=$((SR_FULL_RC / 2))
-        heel_bottom_rows=$heel_rounds_used
-    else
-        # Afterthought heel is worked as a reverse wedge.
-        # Placement formula uses full wedge rounds; bottom contribution is half.
-        heel_rounds_used=$WEDGE_INCREASES
-        heel_bottom_rows=$((WEDGE_INCREASES / 2))
+        HEEL_FOOT_ROWS=$SR_DEPTH
+    else # [ "$HEEL_TYPE" = "afterthought" ]; then
+        # Keep afterthought heel depth consistent with the short-row depth model
+        HEEL_FOOT_ROWS=$SR_DEPTH
     fi
 
     WEDGE_TOE_RC=$(((WEDGE_TOE_NEEDLES_PER_BED * 2) + 2)) # Add 2 rounds for the zigzag row and final wedge shaping after toe rounds are done
 
-    #C
+    # Calculate total sock length in rows based on target foot length and row gauge
     SOCK_LENGTH_IN_ROWS=$(awk -v fl="$TARGET_SOCK_LENGTH" -v gr="$GAUGE_RPI" -v gh="$GAUGE_HEIGHT" 'BEGIN {
         if (gh == 0) gh = 1
         printf "%.0f", fl * gr / gh
     }')
 
-    if [ "$HEEL_TYPE" = "afterthought" ]; then
-        foot_only_rounds=$((SOCK_LENGTH_IN_ROWS - toe_bottom_rows - heel_bottom_rows))
-    else
-        foot_only_rounds=$((SOCK_LENGTH_IN_ROWS - toe_bottom_rows - heel_bottom_rows))
+    # Calculate foot-only length (in rows)
+    FOOT_ONLY_ROUNDS=$((SOCK_LENGTH_IN_ROWS - TOE_FOOT_ROWS - HEEL_FOOT_ROWS))
+    
+    if [ "$FOOT_ONLY_ROUNDS" -lt 0 ]; then
+        FOOT_ONLY_ROUNDS=0
     fi
-    if [ "$foot_only_rounds" -lt 0 ]; then
-        foot_only_rounds=0
-    fi
-    foot_rc_end=$((foot_only_rounds * 2))
+    FOOT_ONLY_RC=$((FOOT_ONLY_ROUNDS * 2))
 
+    # Calculate leg and cuff row counts based on lengths and gauge
     if [ "$LEG_RIBBING_SELECTED" = "yes" ]; then
-        leg_rc_end=$LEG_ROUNDS
-    else
-        leg_rc_end=$((LEG_ROUNDS * 2))
+        LEG_RC=$LEG_ROUNDS
+    else # if working stockinette, double the row count to account for working in the round
+        LEG_RC=$((LEG_ROUNDS * 2))
     fi
 
     if [ "$CUFF_RIBBING_SELECTED" = "yes" ]; then
         cuff_rc_end=$CUFF_ROUNDS
-    else
+    else # if [ "$CUFF_RIBBING_SELECTED" = "no" ], working stockinette in the round, so double row count to account for working in the round
         cuff_rc_end=$((CUFF_ROUNDS * 2))
     fi
 
@@ -777,8 +778,8 @@ generate_pattern() {
     SR_DEPTH=$(printf "%03d" "$SR_DEPTH")
     SR_FULL_RC=$(printf "%03d" "$SR_FULL_RC")
     WEDGE_TOE_RC=$(printf "%03d" "$WEDGE_TOE_RC")
-    foot_rc_end=$(printf "%03d" "$foot_rc_end")
-    leg_rc_end=$(printf "%03d" "$leg_rc_end")
+    FOOT_ONLY_RC=$(printf "%03d" "$FOOT_ONLY_RC")
+    LEG_RC=$(printf "%03d" "$LEG_RC")
     cuff_rc_end=$(printf "%03d" "$cuff_rc_end")
 
     PATTERN_TEXT="${PATTERN_TEXT}================================================================================
@@ -879,7 +880,8 @@ TOE SECTION (SHORT ROW TOE, MAIN BED ONLY)
 - Work short rows on the main bed to shape toe.
 - Set carriage to HOLD.
 Short row shaping:
-- Bring 1 needle furthest from the carriage into hold position. Knit 1 row.
+- Bring 1 needle furthest from the carriage from working position into hold position. 
+- Knit 1 row.
 - Wrap the needle just placed in hold by bringing the yarn under the needle.
 - Repeat until $SR_HOLD_PER_SIDE stitches are in hold on each side and there are $SHORT_ROW_CENTER_STITCHES left in the middle (RC$SR_DEPTH).
 Begin bringing needles back into work:
@@ -898,7 +900,7 @@ TOE SECTION (WEDGE TOE, IN THE ROUND)
 Wedge shaping:
 - Increase 1 stitch on each end of each bed and knit 1 round. (4 increases in total)
 - Knit 1 round.
-- Repeat the Wedge shaping until $HALF_CIRC_STITCHES stitches are on each bed, $CIRCUMFERENCE_STITCHES in total (RC$WEDGE_TOE_RC).
+- Repeat the Wedge shaping $WEDGE_INCREASES times until $HALF_CIRC_STITCHES stitches are on each bed, $CIRCUMFERENCE_STITCHES in total (RC$WEDGE_TOE_RC).
 "
     fi
 
@@ -917,7 +919,7 @@ FOOT SECTION (IN THE ROUND)
 
     PATTERN_TEXT="${PATTERN_TEXT}
 - Reset row count to RC000.
-- Knit in the round for $foot_only_rounds rounds (RC$foot_rc_end)."
+- Knit in the round for $FOOT_ONLY_ROUNDS rounds (RC$FOOT_ONLY_RC)."
 
     if [ "$HEEL_TYPE" = "short row" ]; then
         PATTERN_TEXT="${PATTERN_TEXT}
@@ -954,8 +956,8 @@ Place waste yarn as a stitch holder/marker for heel placement on heel stitches, 
 
     PATTERN_TEXT="${PATTERN_TEXT}
 
-LEG SECTION
------------"
+LEG SECTION - $LEG_PATTERN
+-------------------------"
 
     if [ "$HEEL_TYPE" = "afterthought" ]; then
         PATTERN_TEXT="${PATTERN_TEXT}
@@ -975,11 +977,11 @@ LEG SECTION
 - Remove waste yarn from feeder and free-pass carriage back to working-yarn side.
 - Rethread working yarn and bring up ribber.
 - Set up for $LEG_PATTERN. Reengage row counter and reset to RC000.
-- Remove carraige from hold and rib for $LEG_ROUNDS rows (RC$leg_rc_end)."
+- Remove carraige from hold and rib for $LEG_ROUNDS rows (RC$LEG_RC)."
     else
         PATTERN_TEXT="${PATTERN_TEXT}
 - Bring ribber back up and set up for in-the-round knitting again, ensuring carriage directions pick up yarn from current yarn position on main bed and knit on the ribber bed first.
-- Continue in-the-round stockinette for $LEG_ROUNDS rounds (RC$leg_rc_end)."
+- Continue in-the-round stockinette for $LEG_ROUNDS rounds (RC$LEG_RC)."
     fi
 
     PATTERN_TEXT="${PATTERN_TEXT}
@@ -992,16 +994,18 @@ CUFF SECTION
         PATTERN_TEXT="${PATTERN_TEXT}
 - Set up for $CUFF_PATTERN"
 
-        if [ "$CUFF_PATTERN" = "1x1 ribbing" && [ "$LEG_PATTERN" = "2x2 ribbing" ]]; then
+        if [ "$CUFF_PATTERN" = "1x1 ribbing" ] && [ "$LEG_PATTERN" = "2x2 ribbing" ]; then
             PATTERN_TEXT="${PATTERN_TEXT}
 - It may be easier to transfer all stitches to the main bed and then set up for 1x1 ribbing.
 - Knit $CUFF_ROUNDS rows (RC$cuff_rc_end)."
-        elif [ "$CUFF_PATTERN" = "2x2 ribbing" && [ "$LEG_PATTERN" = "1x1 ribbing" ]]; then
+        elif [ "$CUFF_PATTERN" = "2x2 ribbing" ] && [ "$LEG_PATTERN" = "1x1 ribbing" ]; then
             PATTERN_TEXT="${PATTERN_TEXT}
 - It may be easier to transfer all stitches to the main bed and then set up for 2x2 ribbing.
 - Knit $CUFF_ROUNDS rows (RC$cuff_rc_end)."
-        elif [ "$CUFF_PATTERN" = "2x2 ribbing" ] || [ "$CUFF_PATTERN" = "1x1 ribbing" ] && [ "$LEG_PATTERN" = "stockinette" ]]; then
-            PATTERN_TEXT="${PATTERN_TEXT}
+        else
+            if [ "$LEG_PATTERN" = "stockinette" ]; then
+                if [ "$CUFF_PATTERN" = "2x2 ribbing" ] || [ "$CUFF_PATTERN" = "1x1 ribbing" ]; then
+                    PATTERN_TEXT="${PATTERN_TEXT}
 - For ribbing you can either: 
     - knit waste yarn and remove from the machine and hand knit the cuff ribbing, or 
     - transfer stitches to the main bed and knit cuff ribbing on the machine and graft the cuff to the leg section using Kithener stitch and have a small seam along the side to join the two halfs of the ribbing.
@@ -1017,9 +1021,14 @@ CUFF SECTION
         - Rethread working yarn and bring up ribber.
         - Set up for $LEG_PATTERN. Reengage row counter and reset to RC000.
         - Remove carraige from hold and rib for $CUFF_ROUNDS rows (RC$cuff_rc_end)."
-        else
-            PATTERN_TEXT="${PATTERN_TEXT}
+                else
+                    PATTERN_TEXT="${PATTERN_TEXT}
 - Knit $CUFF_ROUNDS rows (RC$cuff_rc_end)."
+                fi
+            else
+                PATTERN_TEXT="${PATTERN_TEXT}
+- Knit $CUFF_ROUNDS rows (RC$cuff_rc_end)."
+            fi
         fi
     elif [ "$CUFF_FINISH_STYLE" = "folded hem" ]; then
         PATTERN_TEXT="${PATTERN_TEXT}
@@ -1085,7 +1094,14 @@ save_pattern() {
                 read -r save_dir
 
                 # Expand ~ to home directory if present
-                save_dir="${save_dir/#\~/$HOME}"
+                case "$save_dir" in
+                    ~)
+                        save_dir=$HOME
+                        ;;
+                    ~/*)
+                        save_dir="$HOME/${save_dir#~/}"
+                        ;;
+                esac
 
                 # Check if directory exists
                 if [ ! -d "$save_dir" ]; then
@@ -1160,7 +1176,6 @@ output_options() {
 
                 calculate_leg_rounds
                 calculate_cuff_rounds
-                calculate_toe_stitches
                 calculate_shortrow_stitches
             done
             generate_pattern
@@ -1203,7 +1218,7 @@ main() {
     # Calculate values
     calculate_leg_rounds
     calculate_cuff_rounds
-    calculate_toe_stitches
+    calculate_circumference_stitches
     calculate_shortrow_stitches
 
     # Review and allow changes
@@ -1216,7 +1231,6 @@ main() {
             calculate_circumference_stitches
             calculate_leg_rounds
             calculate_cuff_rounds
-            calculate_toe_stitches
             calculate_shortrow_stitches
             display_summary
             if ! confirm_changes; then
