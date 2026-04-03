@@ -37,6 +37,7 @@ print_section() {
 
 pause_for_user() {
     printf "\nPress Enter to continue..."
+    # shellcheck disable=SC2034
     read -r dummy
 }
 
@@ -490,12 +491,12 @@ calculate_circumference_stitches() {
     if [ $((ONE_THIRD_CIRC_STITCHES % 2)) -eq 1 ]; then
         ONE_THIRD_CIRC_STITCHES=$((ONE_THIRD_CIRC_STITCHES - 1))
     fi
-    if [ TOE_TYPE = "wedge" ]; then
     # Wedge toe increases add 4 stitches per increase round.
     # Adjust the one-third cast-on downward until the remaining stitches are divisible by 4.
-    while [ $(((CIRCUMFERENCE_STITCHES - ONE_THIRD_CIRC_STITCHES) % 4)) -ne 0 ]; do
-        ONE_THIRD_CIRC_STITCHES=$((ONE_THIRD_CIRC_STITCHES - 2))
-    done
+    if [ "$TOE_TYPE" = "wedge" ]; then
+        while [ $(((CIRCUMFERENCE_STITCHES - ONE_THIRD_CIRC_STITCHES) % 4)) -ne 0 ]; do
+            ONE_THIRD_CIRC_STITCHES=$((ONE_THIRD_CIRC_STITCHES - 2))
+        done
     fi
 }
 
@@ -729,7 +730,7 @@ generate_pattern() {
     # WEDGE_INCREASES calculates how many increase rows are needed for a wedge toe
     # Cast on one third stitches of total circumference, divided evenly across both beds
     # Increase each end of each bed every other round until reaching full circumference stitch count
-    WEDGE_INCREASES=$(( (CIRCUMFERENCE_STITCHES - ONE_THIRD_CIRC_STITCHES) / 4 ))
+    # WEDGE_INCREASES=$(( (CIRCUMFERENCE_STITCHES - ONE_THIRD_CIRC_STITCHES) / 4 ))
 
     # Use one canonical depth model for foot-length budgeting
     TOE_FOOT_ROWS=$SR_DEPTH
@@ -1080,7 +1081,7 @@ display_pattern() {
 save_pattern() {
     while true; do
         printf "\n\nWhere would you like to save the pattern?\n"
-        printf "1) Current directory ($(pwd))\n"
+        printf "1) Current directory\n"
         printf "2) Specify another directory\n"
         printf "Choice (1-2): "
         read -r save_location
