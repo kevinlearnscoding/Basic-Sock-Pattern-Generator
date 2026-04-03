@@ -115,7 +115,7 @@ get_foot_size() {
             SHOE_GENDER="Men's"
             compute_foot_length_from_mens_size "$size"
             ;;
-        3)
+        3) # custom foot dimensions
             SHOE_SIZE=""
             SHOE_GENDER=""
             if [ "$MEASUREMENT_UNITS" = "metric" ]; then
@@ -125,11 +125,11 @@ get_foot_size() {
             fi
             read -r input_length
             if [ "$MEASUREMENT_UNITS" = "metric" ]; then
-                TARGET_SOCK_LENGTH=$(cm_to_inches "$input_length")
+                RAW_FOOT_LENGTH=$(cm_to_inches "$input_length")
             else
-                TARGET_SOCK_LENGTH="$input_length"
+                RAW_FOOT_LENGTH="$input_length"
             fi
-            RAW_FOOT_LENGTH="$TARGET_SOCK_LENGTH"
+            TARGET_SOCK_LENGTH=$(printf "%.1f" "$RAW_FOOT_LENGTH" | awk '{printf "%.1f", $1 * 0.9}')
 
             if [ "$MEASUREMENT_UNITS" = "metric" ]; then
                 printf "Foot circumference (cm): "
@@ -547,7 +547,11 @@ display_summary() {
     fi
     if [ "$MEASUREMENT_UNITS" = "metric" ]; then
         if [ -n "$RAW_FOOT_LENGTH" ]; then
-            printf "  Estimated foot length: %.1f cm\n" "$(inches_to_cm "$RAW_FOOT_LENGTH")"
+            if [ -n "$SHOE_SIZE" ]; then
+                printf "  Estimated foot length: %.1f cm\n" "$(inches_to_cm "$RAW_FOOT_LENGTH")"
+            else
+                printf "  Entered foot length: %.1f cm\n" "$(inches_to_cm "$RAW_FOOT_LENGTH")"
+            fi
             printf "  Target sock foot length (90%% ease): %.1f cm\n" "$(inches_to_cm "$TARGET_SOCK_LENGTH")"
         else
             printf "  Foot length input: %.1f cm\n" "$(inches_to_cm "$TARGET_SOCK_LENGTH")"
@@ -555,7 +559,11 @@ display_summary() {
         printf "  Foot circumference: %.1f cm\n" "$(inches_to_cm "$FOOT_CIRCUMFERENCE")"
     else
         if [ -n "$RAW_FOOT_LENGTH" ]; then
-            printf "  Estimated foot length: %.1f inches\n" "$RAW_FOOT_LENGTH"
+            if [ -n "$SHOE_SIZE" ]; then
+                printf "  Estimated foot length: %.1f inches\n" "$RAW_FOOT_LENGTH"
+            else
+                printf "  Entered foot length: %.1f inches\n" "$RAW_FOOT_LENGTH"
+            fi
             printf "  Target sock foot length (90%% ease): %.1f inches\n" "$TARGET_SOCK_LENGTH"
         else
             printf "  Foot length input: %.1f inches\n" "$TARGET_SOCK_LENGTH"
@@ -730,7 +738,7 @@ generate_pattern() {
     # WEDGE_INCREASES calculates how many increase rows are needed for a wedge toe
     # Cast on one third stitches of total circumference, divided evenly across both beds
     # Increase each end of each bed every other round until reaching full circumference stitch count
-    # WEDGE_INCREASES=$(( (CIRCUMFERENCE_STITCHES - ONE_THIRD_CIRC_STITCHES) / 4 ))
+    WEDGE_INCREASES=$(( (CIRCUMFERENCE_STITCHES - ONE_THIRD_CIRC_STITCHES) / 4 ))
 
     # Use one canonical depth model for foot-length budgeting
     TOE_FOOT_ROWS=$SR_DEPTH
@@ -746,7 +754,7 @@ generate_pattern() {
         HEEL_FOOT_ROWS=$SR_DEPTH
     fi
 
-    WEDGE_TOE_RC=$(((WEDGE_TOE_NEEDLES_PER_BED * 2) + 2)) # Add 2 rounds for the zigzag row and final wedge shaping after toe rounds are done
+    WEDGE_TOE_RC=$(((WEDGE_INCREASES * 4) + 3)) # Multiply by 4 to account for knitting in the round, Add 3 rounds for the zigzag row and final wedge shaping round after toe rounds are done
 
     # Calculate total sock length in rows based on target foot length and row gauge
     SOCK_LENGTH_IN_ROWS=$(awk -v fl="$TARGET_SOCK_LENGTH" -v gr="$GAUGE_RPI" -v gh="$GAUGE_HEIGHT" 'BEGIN {
@@ -836,10 +844,16 @@ MEASUREMENTS & GAUGE
 Shoe size: US $SHOE_GENDER $SHOE_SIZE"
     fi
 
-    if [ -n "$SHOE_SIZE" ]; then
-        PATTERN_TEXT="${PATTERN_TEXT}
+    if [ -n "$RAW_FOOT_LENGTH" ]; then
+        if [ -n "$SHOE_SIZE" ]; then
+            PATTERN_TEXT="${PATTERN_TEXT}
 Estimated Foot Length: $raw_foot_len $unit_display
 Target Sock Foot Length (90% ease): $foot_len $unit_display"
+        else
+            PATTERN_TEXT="${PATTERN_TEXT}
+Entered Foot Length: $raw_foot_len $unit_display
+Target Sock Foot Length (90% ease): $foot_len $unit_display"
+        fi
     else
         PATTERN_TEXT="${PATTERN_TEXT}
 Foot Length Input: $foot_len $unit_display"
@@ -901,7 +915,7 @@ TOE SECTION (WEDGE TOE, IN THE ROUND)
 Wedge shaping:
 - Increase 1 stitch on each end of each bed and knit 1 round. (4 increases in total)
 - Knit 1 round.
-- Repeat the Wedge shaping $WEDGE_INCREASES times until $HALF_CIRC_STITCHES stitches are on each bed, $CIRCUMFERENCE_STITCHES in total (RC$WEDGE_TOE_RC).
+- Repeat the Wedge shaping $WEDGE_INCREASES times (including the plain knit round) until $HALF_CIRC_STITCHES stitches are on each bed, $CIRCUMFERENCE_STITCHES in total (RC$WEDGE_TOE_RC).
 "
     fi
 
