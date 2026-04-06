@@ -913,8 +913,8 @@ TOE SECTION (WEDGE TOE, IN THE ROUND)
 - Set carriages to knit in the round.
 - Knit 1 round (2 passes of carriage).
 Wedge shaping:
-- Increase 1 stitch on each end of each bed and knit 1 round. (4 increases in total)
-- Knit 1 round.
+- Increase 1 stitch on each end of each bed. (4 increases in total)
+- Knit 2 rounds.
 - Repeat the Wedge shaping $WEDGE_INCREASES times (including the plain knit round) until $HALF_CIRC_STITCHES stitches are on each bed, $CIRCUMFERENCE_STITCHES in total (RC$WEDGE_TOE_RC).
 "
     fi
@@ -950,7 +950,7 @@ HEEL SECTION (SHORT ROW HEEL, MAIN BED ONLY)
 - Set row counter to 000.
 - Drop ribber bed and set up for knitting on the main bed only.
 - Set carriage to HOLD.
-- Bring 1 needle (closest to center 0) on the side of the bed opposite the carriage into hold, knit 1 row.
+- Bring 1 needle on the side of the bed opposite the carriage into hold, knit 1 row.
 - Wrap the needle that was just placed in hold by bringing the yarn under the needle.
 - Bring 1 needle into hold on the side of the bed opposite the carriage, knit 1 row.
 - Wrap the needle that was just placed in hold, making sure to bring the yarn over the other needles in hold.
@@ -992,7 +992,7 @@ LEG SECTION - $LEG_PATTERN
 - Remove waste yarn from feeder and free-pass carriage back to working-yarn side.
 - Rethread working yarn and bring up ribber.
 - Set up for $LEG_PATTERN. Reengage row counter and reset to RC000.
-- Remove carraige from hold and rib for $LEG_ROUNDS rows (RC$LEG_RC)."
+- Remove carriage from hold and rib for $LEG_ROUNDS rows (RC$LEG_RC)."
     else
         PATTERN_TEXT="${PATTERN_TEXT}
 - Bring ribber back up and set up for in-the-round knitting again, ensuring carriage directions pick up yarn from current yarn position on main bed and knit on the ribber bed first.
@@ -1035,7 +1035,7 @@ CUFF SECTION
         - Remove waste yarn from feeder and free-pass carriage back to working-yarn side.
         - Rethread working yarn and bring up ribber.
         - Set up for $LEG_PATTERN. Reengage row counter and reset to RC000.
-        - Remove carraige from hold and rib for $CUFF_ROUNDS rows (RC$cuff_rc_end)."
+        - Remove carriage from hold and rib for $CUFF_ROUNDS rows (RC$cuff_rc_end)."
                 else
                     PATTERN_TEXT="${PATTERN_TEXT}
 - Knit $CUFF_ROUNDS rows (RC$cuff_rc_end)."
