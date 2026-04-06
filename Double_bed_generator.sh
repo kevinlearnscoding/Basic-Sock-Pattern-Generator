@@ -473,11 +473,11 @@ get_dial_settings() {
 # ============================================================================
 
 calculate_circumference_stitches() {
-    # Cast-on stitches based on foot circumference and gauge
-    # Formula: (foot circumference * stitches per inch) / gauge width
+    # Cast-on stitches based on eased foot circumference and gauge
+    # Formula: ((foot circumference * 0.9) * stitches per inch) / gauge width
     # Use awk to handle decimal gauge values
 
-    CIRCUMFERENCE_STITCHES=$(printf "%s\n" "$FOOT_CIRCUMFERENCE" | awk -v gs="$GAUGE_SPI" -v gw="$GAUGE_WIDTH" '{printf "%.0f", ($1 * gs) / gw}')
+    CIRCUMFERENCE_STITCHES=$(printf "%s\n" "$FOOT_CIRCUMFERENCE" | awk -v gs="$GAUGE_SPI" -v gw="$GAUGE_WIDTH" '{printf "%.0f", (($1 * 0.9) * gs) / gw}')
 
     # Round to nearest even number for easier ribbing patterns
     if [ $((CIRCUMFERENCE_STITCHES % 2)) -eq 1 ]; then
@@ -1108,19 +1108,20 @@ save_pattern() {
                 printf "Enter directory path: "
                 read -r save_dir
 
-                # Expand ~ to home directory if present
+                # Expand a leading ~ so common home-directory paths work as expected.
                 case "$save_dir" in
-                    ~)
+                    "~")
                         save_dir=$HOME
                         ;;
-                    ~/*)
-                        save_dir="$HOME/${save_dir#~/}"
+                    "~"/*)
+                        save_dir="$HOME/${save_dir#\~/}"
                         ;;
                 esac
 
                 # Check if directory exists
                 if [ ! -d "$save_dir" ]; then
-                    printf "Directory does not exist. Create it? (y/n): "
+                    printf "Directory does not exist: %s\n" "$save_dir"
+                    printf "Create it? (y/n): "
                     read -r create_dir
                     case "$create_dir" in
                         [Yy]*)
